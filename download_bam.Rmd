@@ -1,0 +1,66 @@
+---
+title: "A practical guide to cancer subclonal reconstruction from DNA sequencing: download BAM file"
+author: "Maxime Tarabichi <maxime.tarabichi@gmail.com>"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{ZscoresVdNdS}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+
+## Step1: request access to the data
+
+
+First, write an email to: ega-helpdesk@ebi.ac.uk to get access to the
+dataset EGAD00001002771.
+
+> Dear EGA team,
+>
+> I would like to be granted access to the dataset with number EGAD00001002771.
+>
+> Many thanks,
+>
+> Your Signature
+
+
+If you are not using an academic email address, EGA helpdesk will ask
+for one for account creation. 
+
+With your academic address, you will be granted automatic access to
+this dataset. After your account has been created by EGA helpdesk, you
+will receive an email to set up your password. 
+
+## Step2: download EgaDemoClient.jar and run it to download the files
+
+Once the access has been granted and your credentials have been set up
+there are [**several
+ways**](https://www.ebi.ac.uk/ega/about/your_EGA_account/download_streaming_client)
+to download the data from EGA.
+
+
+You can easily download files from the dataset or the whole dataset
+using the [**Demo client file**](https://www.ebi.ac.uk/ega/sites/ebi.ac.uk.ega/files/documents/EGA_download_client_2.2.2.zip}{EgaDemoClient.jar).
+Interactive and command line modes are explained [**here**](https://www.ebi.ac.uk/ega/about/your_EGA_account/download_streaming_client#client).
+
+
+You can then downloadg the dataset using the following two commands, where login.txt contains two lines with your login and
+password, respectively:
+
+> java -jar EgaDemoClient.jar -pf login.txt -rfd EGAD00001002771 -re passphrase -label request_EGAD00001002771
+>
+> java -jar EgaDemoClient.jar -pf login.txt -dr request_EGAD00001002771 -nt 7
+>
+
+The first line sends a dataset download request. The second line
+launches the download using 7 parallel download streams. Change the
+passphrase to your own passphrase for parameter -re. The downloaded
+data will be encrypted. 
+
+You can decrypt them with the client using your passphrase:
+
+> java -jar EgaDemoClient.jar -p *username* *password* -dc *path_to_file1* -dck *passphrase*
+>
+

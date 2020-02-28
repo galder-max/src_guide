@@ -1,0 +1,1301 @@
+---
+title: "A practical guide to cancer subclonal reconstruction from DNA sequencing"
+output:
+  pdf_document:
+    dev: cairo_pdf
+    toc: true
+    keep_tex: true
+bibliography: bibliography/references.bib
+date: "`r format(Sys.time(), '%d %B %Y')`"
+header-includes:
+  \usepackage{caption}
+  \usepackage{float}
+  \floatplacement{figure}{H}
+  \captionsetup[figure]{labelfont={bf},name={Figure}, labelsep=period}
+---
+
+```{r wrap-hook, include=F}
+library(knitr)
+library(kableExtra)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+```{r, echo=F, eval=T}
+
+plot_cna <- function(t,
+                     col1=rgb(47/255,79/255,79/255,1),##col of minor allele
+                     col2=rgb(230/255,159/255,0,1),##col of total alleles
+                     lwdSegs=3.5) ##width of the segments
+{
+    add <- cumsum(sapply(1:22,function(x)
+    {
+        max(t$endpos[t$chr==x])/1000
+    }))
+    add <- c(0,add)
+    notna <- function(x) ifelse(is.na(x),0,x)
+    t$averageMin <- t$nMin1_A*t$frac1_A+notna(t$nMin2_A*t$frac2_A)
+    t$averageMaj <- t$nMaj1_A*t$frac1_A+notna(t$nMaj2_A*t$frac2_A)
+    t$averageTot <- t$averageMin+t$averageMaj
+    par(mar=c(1,3,1,1))
+    plot(0,0,xaxt="n",yaxt="n",
+         xlab=paste0(""),
+         ylab="",
+         main=paste0(""),
+         col=rgb(0,0,0,0),
+         frame=T,
+         xlim=c(0,add[length(add)]),
+         ylim=c(0,4.5))
+    title(ylab="Copy Number",line=2)
+    for(i in 1:22)
+    {
+        subt <- t[t$chr==i,]
+        segments(subt$startpos/1000+add[i],
+                 subt$averageMin,
+                 subt$endpos/1000+add[i],
+                 subt$averageMin,col=col1,lwd=lwdSegs)
+        segments(subt$startpos/1000+add[i],
+                 subt$averageTot,
+                 subt$endpos/1000+add[i],
+                 subt$averageTot,col=col2,lwd=lwdSegs)
+    }
+    abline(v=add,lty=1,col=rgb(0,0,0,.5))
+    text(paste0(1:22),
+         x=add[-c(1)]-25000,
+         y=4.1,
+         cex=.6)
+    axis(side=2,at=0:5)
+    abline(h=0:10,lty=1,col=rgb(.6,.6,.6,.3))
+    return(add)
+}
+
+addMut <- function(dpinput,add)
+{
+    dpinput <- dpinput[dpinput[,"chr"]%in%1:22,]
+    points(x=dpinput[,"start"]/1000+add[dpinput[,"chr"]],
+           y=dpinput[,"mutation.copy.number"],
+           pch=19,
+           col=rgb(0,0,0,.25),cex=.3)
+}
+
+loadMuTect <- function(mutectFile)
+{
+    mutect <- read.table(mutectFile,header=F)
+    colnames(mutect) <- c("CHROM",
+                          "POS",
+                          "ID",
+                          "REF",
+                          "ALT",
+                          "QUAL",
+                          "FILTER",
+                          "INFO",
+                          "FORMAT",
+                          "normal",
+                          "tumor")
+    vafsT <- as.numeric(gsub("(.*):(.*):(.*):(.*):(.*):(.*)","\\5",mutect$tumor))
+    vafsN <- as.numeric(gsub("(.*):(.*):(.*):(.*):(.*):(.*)","\\5",mutect$normal))
+    ntot <- as.numeric(gsub("(.*):(.*):(.*):(.*):(.*):(.*)","\\4",mutect$normal))
+    return(mutect)
+}
+
+loadPerfect <- function(vcfFile)
+{
+    perfect <- read.table(vcfFile,header=F)
+    colnames(perfect) <- c("CHROM",
+                          "POS",
+                          "ID",
+                          "REF",
+                          "ALT",
+                          "QUAL",
+                          "FILTER",
+                          "INFO",
+                          "FORMAT",
+                          "tumor")
+    return(perfect)
+}
+
+createAlleleCountsFile.mutect <- function(vcfdat, datacol=11, namecol=9) {
+    tumour_stat = data.frame(do.call(rbind, strsplit(as.vector(vcfdat[,datacol]), split = ":", fixed = TRUE)))
+    colnames(tumour_stat) = strsplit(as.vector(unique(vcfdat[,namecol])),':')[[1]]
+    mutCount =  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',2)))
+    wtCount = as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',1)))
+    counts_table = mutwt2allelecounts(counts.alt=mutCount,
+                                      counts.ref=wtCount,
+                                      allele.alt=as.character(vcfdat$ALT),
+                                      allele.ref=as.character(vcfdat$REF))
+    output = data.frame(as.character(vcfdat[,1]), vcfdat[,2], counts_table, rowSums(counts_table))
+    colnames(output) = c("#CHR","POS","Count_A","Count_C","Count_G","Count_T","Good_depth")
+    output
+}
+
+mutwt2allelecounts <- function(counts.alt, counts.ref, allele.alt, allele.ref) {
+output = array(0, c(length(allele.ref), 4))
+  nucleotides = c("A", "C", "G", "T")
+  nucleo.index = match(allele.alt, nucleotides)
+  for (i in 1:nrow(output)) {
+    output[i,nucleo.index[i]] = counts.alt[i]
+  }
+  nucleo.index = match(allele.ref, nucleotides)
+  for (i in 1:nrow(output)) {
+    output[i,nucleo.index[i]] = counts.ref[i]
+  }
+  return(output)
+}
+
+createAlleleCountsFile.perfect <- function(vcfdat, datacol=10, namecol=9) {
+    tumour_stat = data.frame(do.call(rbind, strsplit(as.vector(vcfdat[,datacol]), split = ":", fixed = TRUE)))
+    colnames(tumour_stat) = strsplit(as.vector(unique(vcfdat[,namecol])),',')[[1]]
+    mutCount =  as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',2)))
+    wtCount = as.integer(unlist(lapply(strsplit(as.vector(tumour_stat[,'AD']),','),'[[',1)))
+    counts_table = mutwt2allelecounts(counts.alt=mutCount,
+                                      counts.ref=wtCount,
+                                      allele.alt=as.character(vcfdat$ALT),
+                                      allele.ref=as.character(vcfdat$REF))
+    output = data.frame(as.character(vcfdat[,1]), vcfdat[,2], counts_table, rowSums(counts_table))
+    colnames(output) = c("#CHR","POS","Count_A","Count_C","Count_G","Count_T","Good_depth")
+    output
+}
+
+writeRhoPsi <- function(cellularity, ploidy, psi, outfile="rhoPsiFile.txt")
+{
+    cp <- cbind(cellularity,ploidy, psi)
+    colnames(cp) <- c("cellularity","ploidy","psi")
+    cp <- unlist(cp)
+    RP <- matrix(NA,3,5)
+    colnames(RP) <- c("rho",	"psi",	"ploidy",	"distance",	"is.best")
+    rownames(RP) <- c("ASCAT","FRAC_GENOME","REF_SEG")
+    RP[3,4] <- "Inf"
+    RP[3,5] <- "FALSE"
+    RP[2,5] <- "TRUE"
+    RP[2,4] <- runif(1)
+    RP[1,1:3] <- cp[c(1,3,2)]
+    RP[2,1:3] <- cp[c(1,3,2)]
+    write.table(RP,file=outfile,sep="\t",col.names=T,row.names=T,quote=F)
+}
+
+createAlleleCountsFile <- function(vcfFile, isperfect=T, outfile="allele_counts.txt")
+{
+    chrom_col <- 1
+    pos_col <- 2
+    ref_col <- 4
+    alt_col <- 5
+    vcfdat <- if(isperfect) loadPerfect(vcfFile) else loadMuTect(vcfFile)
+    loci <- vcfdat[, c(chrom_col, pos_col, ref_col, alt_col)]
+    write.table(loci,
+                file="loci.txt",
+                sep="\t",
+                quote=F, row.names=F, col.names=F)
+    output <- if(isperfect) createAlleleCountsFile.perfect(vcfdat) else createAlleleCountsFile.mutect(vcfdat)
+    write.table(output, file=outfile, sep="\t", quote=F, row.names=F)
+}
+
+
+############################################################################################
+# Code to wrap up a run
+############################################################################################
+#' Function that stores the final output in a unified format on disk
+#' @param clustering A clustering result
+#' @param dataset The dataset that went into clustering
+#' @param most.similar.mut Vector containing for each non-sampled mutation its most similar sampled mutation. The non-sampled mutation will be assigned to the same cluster
+#' @param outfiles.prefix A prefix for the filenames
+#' @param assign_sampled_muts Boolean whether to assign the non-sampled mutations (Default: TRUE)
+#' @param write_tree Boolean whether to write a tree to file. Not all clustering methods return a tree (Default: FALSE)
+#' @author sd11
+writeStandardFinalOutput  <-  function(clustering,
+                                       dataset,
+                                       most.similar.mut,
+                                       outfiles.prefix,
+                                       subsamplenames,
+                                       assign_sampled_muts=T,
+                                       write_tree=F)
+{
+  num_samples = ncol(dataset$mutCount)  
+  ########################################################################
+  # Check if mutation sampling has been done, if so, unpack and assign here
+  ########################################################################
+  if (!is.na(most.similar.mut) && assign_sampled_muts) {
+    res = unsample_mutations(dataset, clustering)
+    dataset = res$dataset
+    clustering = res$clustering
+  } 
+  ########################################################################
+  # Write out the final mutation-cluster probabilities with all mutations spiked in
+  ########################################################################
+  if (!is.null(clustering$all.assignment.likelihoods) & !is.na(clustering$all.assignment.likelihoods)) {
+    # Fetch and drop all columns that have just zeroes
+    cols_all_zero = which(sapply(1:ncol(clustering$all.assignment.likelihoods), function(i) { max(clustering$all.assignment.likelihoods[,i])==0 }))
+    if (length(cols_all_zero)!=0) {
+      all_assignment_likelihoods = clustering$all.assignment.likelihoods[,-cols_all_zero, drop=F]
+      cluster_colnames = (1:ncol(clustering$all.assignment.likelihoods))
+      print(cluster_colnames)
+      cluster_colnames = (1:ncol(clustering$all.assignment.likelihoods))[-cols_all_zero]
+      print(cluster_colnames)
+    } else {
+      all_assignment_likelihoods = clustering$all.assignment.likelihoods
+      cluster_colnames = 1:ncol(clustering$all.assignment.likelihoods)
+    }    
+      all_assignment_likelihoods = data.frame(dataset$chromosome[,1],
+                                              dataset$position[,1]-1,
+                                              dataset$position[,1], all_assignment_likelihoods,
+                                              clustering$best.node.assignments)
+      colnames(all_assignment_likelihoods) = c("chr", "start", "end",
+                                               paste("prob.cluster",
+                                                     cluster_colnames, sep="."), "most.likely.cluster")
+      write.table(all_assignment_likelihoods[dataset$mutationType=="SNV",],
+                  file=paste(outfiles.prefix, "_mutationClusterLikelihoods.bed", sep=""),
+                  quote=F, row.names=F, sep="\t")    
+    if (any(dataset$mutationType=="CNA")) {
+        write.table(all_assignment_likelihoods[dataset$mutationType=="CNA",],
+                    file=paste(outfiles.prefix, "_mutationClusterLikelihoodsPseudoSNV.bed", sep=""),
+                    quote=F, row.names=F, sep="\t")
+    }
+  }  
+  ########################################################################
+  # Add the removed mutations back in
+  ########################################################################
+  output = cbind(dataset$chromosome[,1],
+                 dataset$position[,1]-1,
+                 dataset$position[,1],
+                 clustering$best.node.assignments,
+                 clustering$best.assignment.likelihoods)
+  save(file="temp.RData", output, dataset)
+  print("Adding in removed indices")
+  res = add_removed_snvs(dataset, output)
+  output = res$snv_assignment_table
+  mutationType = res$mutationType  
+  ########################################################################
+  # Save the indices of the mutations that were not used during the analysis
+  ########################################################################
+  save(file=paste(outfiles.prefix, "_bestConsensusResults.RData", sep=""),
+       output, clustering)
+  write.table(data.frame(mut.index=dataset$removed_indices),
+              file=paste(outfiles.prefix,"_removedMutationsIndex.txt", sep=""),
+              row.names=F, quote=F)  
+  ########################################################################
+  # Save the consensus mutation assignments
+  ########################################################################
+  colnames(output) = c("chr", "start", "end", "cluster", "likelihood")
+  write.table(output[mutationType=="SNV",],
+              file=paste(outfiles.prefix, "_bestConsensusAssignments.bed", sep=""),
+              quote=F, row.names=F, sep="\t")  
+  ########################################################################
+  # Save the CNA assignments separately
+  ########################################################################
+  if (any(mutationType=="CNA")) {
+      write.table(output[mutationType=="CNA",],
+                  file=paste(outfiles.prefix, "_bestConsensusAssignmentsPseudoSNV.bed", sep=""),
+                  quote=F, row.names=F, sep="\t")
+    # Assign the CNAs to clusters using their pseudoSNV representations
+    cndata = assign_cnas_to_clusters(dataset$cndata, output)
+      write.table(cndata, file=paste(outfiles.prefix, "_bestCNAassignments.txt", sep=""),
+                  quote=F, row.names=F, sep="\t")    
+    if (!is.null(clustering$all.assignment.likelihoods) & !is.na(clustering$all.assignment.likelihoods)) {
+        cna_assignment_likelihoods = get_cnas_cluster_probs(dataset$cndata,
+                                                            all_assignment_likelihoods[dataset$mutationType=="CNA",],
+                                                            colnames(all_assignment_likelihoods))
+        write.table(cna_assignment_likelihoods,
+                    file=paste(outfiles.prefix, "_cnaClusterLikelihoods.bed", sep=""),
+                    quote=F, row.names=F, sep="\t")
+    }    
+    # Create a new assignment table figure with the correct information
+    # This removes pseudo SNVs as the assignmentTable will add an extra column for CNAs
+    cluster_locations = clustering$cluster.locations
+    cluster_locations[,3] = rep(0, nrow(cluster_locations))
+    mut_assignments = table(output[mutationType=="SNV","cluster"])
+    for (i in 1:nrow(cluster_locations)) {
+      if (as.character(cluster_locations[i,1]) %in% names(mut_assignments)) {
+        cluster_locations[i,3] = mut_assignments[as.character(cluster_locations[i,1])]
+      }
+    }
+      plotAssignmentTable(cluster_locations,
+                          paste(outfiles.prefix, "_mutation_assignments.png", sep=""),
+                          cndata=cndata, num_samples=num_samples)
+  } else {
+    print("Saving assignment table in")
+    print(paste(outfiles.prefix, "_mutation_assignments.png", sep=""))
+    plotAssignmentTable(clustering$cluster.locations,
+                        paste(outfiles.prefix, "_mutation_assignments.png", sep=""),
+                        num_samples=num_samples)
+    cluster_locations = clustering$cluster.locations
+  }  
+  ########################################################################
+  # Write final cluster locations
+  ########################################################################
+  if (ncol(clustering$cluster.locations) > 3) {
+    # nD based clustering
+      write.table(cluster_locations, paste(outfiles.prefix,"_bestClusterInfo.txt",sep=""),
+                  col.names=c("cluster.no", paste(samplename,subsamplenames,sep=""), "no.of.mutations"),
+                  sep="\t", quote=F, row.names=F)
+  } else {
+    # 1D based
+      write.table(cluster_locations, paste(outfiles.prefix,"_bestClusterInfo.txt",sep=""),
+                  col.names=c("cluster.no","location","no.of.mutations"), row.names=F,
+                  sep="\t", quote=F)
+  }  
+  ########################################################################
+  # If tree based analysis, also save the tree
+  ########################################################################
+  if (write_tree) {
+      write.table(clustering$best.tree,
+                  file=paste(outfiles.prefix, "_bestConsensusTree.txt", sep=""),
+                  quote=F, row.names=F, sep="\t")
+  }
+}
+
+
+#' Add removed mutations back into the assignment table. SNVs will be assigned to the cluster of its most similar not-removed SNV
+#' @param dataset A dataset object
+#' @param snv_assignment_table Data frame with the mutation assignments
+#' @return The snv_assignment_table with the removed mutations added into the position they were originally
+#' @author sd11
+add_removed_snvs = function(dataset, snv_assignment_table) {
+  mutationType = as.character(dataset$mutationType)
+  if (length(dataset$removed_indices) > 0) {
+    for (i in dataset$removed_indices) {
+      if (i==1) {
+          snv_assignment_table = rbind(c(dataset$chromosome.not.filtered[i],
+                                         dataset$mut.position.not.filtered[i]-1,
+                                         dataset$mut.position.not.filtered[i], NA, NA),
+                                       snv_assignment_table)
+        mutationType = c("SNV", mutationType)
+      } else if (i >= nrow(snv_assignment_table)) {
+          snv_assignment_table = rbind(snv_assignment_table,
+                                       c(dataset$chromosome.not.filtered[i],
+                                         dataset$mut.position.not.filtered[i]-1,
+                                         dataset$mut.position.not.filtered[i], NA, NA))
+        mutationType = c(mutationType, "SNV")
+      } else {
+          snv_assignment_table = rbind(snv_assignment_table[1:(i-1),],
+                                       c(dataset$chromosome.not.filtered[i],
+                                         dataset$mut.position.not.filtered[i]-1,
+                                         dataset$mut.position.not.filtered[i], NA, NA),
+                                       snv_assignment_table[i:nrow(snv_assignment_table),])
+        mutationType = c(mutationType[1:(i-1)], "SNV", mutationType[i:length(mutationType)])
+      }
+    }
+  }
+  ## Sort the output in the same order as the dataset
+  chrpos_input = paste(dataset$chromosome.not.filtered,
+                       dataset$mut.position.not.filtered, sep="_")
+  if (!is.null(dataset$cndata)) {
+      chrpos_input = c(chrpos_input, paste(dataset$chromosome[dataset$mutationType=="CNA"],
+                                           dataset$position[dataset$mutationType=="CNA"], sep="_"))
+  }
+  chrpos_output = paste(snv_assignment_table[,1], snv_assignment_table[,3], sep="_")
+  snv_assignment_table = snv_assignment_table[match(chrpos_input, chrpos_output),]
+  return(list(snv_assignment_table=snv_assignment_table, mutationType=mutationType))
+}
+
+```
+
+
+\newpage
+# Introduction
+
+## About this guide
+In this guide we will go through the steps of reconstructing a tumour
+subclonal architecture (\textbf{Figure\ref{Figure1}A}). 
+For simplicity, we will be starting from one
+pair of patient-matched simulated tumour and normal bam files. 
+
+These bam files have been simulated using
+[**BAMSurgeon**](https://github.com/adamewing/bamsurgeon) to
+correspond to a pre-designed tumour phylogeny shown on
+\textbf{Figure\ref{Figure1}B}. Knowing the true mutations, copy number
+aberrations and underlying subclonal structure will help illustrate
+and give maximal insight into the concepts at each step of the pipeline.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{figures/fig1_pipelineOutline.pdf}
+  \caption{A. Pipeline outline. We will go through each step in this
+  guide. B. Simulated tumour phylogeny. A few thousands SNV, 3 lost
+  chromosome clonally and one lost chromosome subclonally. 
+  The simulated BAM, vcf and copy number outputs are available
+  for download (see next section).}
+  \label{Figure1}
+\end{figure}
+
+For each step of the SRC, we have chosen one method for illustration
+purposes. However, the choice of the methods should be carefully
+considered by the user. Indeed, different methods will have different
+behaviour and might be better suited for the type of samples or
+project at hand. In the main text, we only recommend methods with
+specific characteristics, e.g. take into account copy number, Beta or
+Binomial models, picking one/the best method is not the subject of
+this guide.
+
+Although, we will cover some of the theoretical aspects of the
+different methods and SRC in this practical guide, we recommend a more
+in-depth book chapter on the principles of SRC by Dentro, Wedge, and
+Van Loo [@dentro_principles_2017].
+
+## Availability
+This guide is also available on github:
+**https://github.com/galder-max/src_guide**. The data used here is available
+online, see next section for details. For each method, we provide
+hyperlink to their online webpage.  
+
+\newpage
+# Download input data
+
+Important note: There is no need to start from the BAM file. 
+If you would like to skip some of the steps upstream of the clustering
+and phylogeny inference, all the input files are already available
+online on synapse (see following section). 
+
+
+## Input BAM file
+The input BAM files were generated as part of another project
+[@salcedo_community_2020] and can be downloaded from EGA under study
+accession no. [**EGAD00001003971**](https://www.ebi.ac.uk/ega/studies/EGAS00001002092).
+
+## VCF files
+It will be less time consuming to start form vcf files. Mutation calling has
+already been performed with four different callers on these BAMs. In
+this guide we will use the "perfect" or "true" calls, i.e. the mutations
+as input to the simulator, and compare them to the MuTect calls. 
+All vcf files are available on
+[**synapse**](https://www.synapse.org/#!Synapse:syn2813581/wiki/303137). 
+The vcf files accession number is syn21609786. Here we will be using T2 at
+128X, the file is named *perfect_T2.T.128X_noXY.vcf*. We will compare
+the results with results obtained on downsampled BAM files at half the
+depth, i.e. 64X. These files are also available in the same tarball,
+together with 32X, 16X and 8X.
+
+## Copy number aberration calling
+CNA calling has been performed using
+[**Battenberg**](https://github.com/Wedge-Oxford/battenberg)
+[@nik-zainal_life_2012]. The output files can be downloadded in
+synapse with accession number syn21609785. Again, we are using T2 at
+128X. The files are named *T2-128X_refit_cellularity_ploidy.txt* and
+*T2-128X_refit_subclones_noXY.txt*. The former contains the purity and
+ploidy values, while the latter contains the per segment copy number
+calls.
+Battenberg outputs for downsampled BAM files are also available at
+64X, 32X, 16X and 8X.
+
+\newpage
+# Step-by-step guide
+
+## Alignment with BWA-mem
+
+We will assume that most quality checks have been performed and the
+first step after receiving your sequences fresh from the sequencing
+facility, is to align the fastq files to the reference genome. Here we
+have used [**hg19**](http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/technical/reference/phase2_reference_assembly_sequence/hs37d5.fa.gz)
+and aligned with [**BWA-mem**](https://github.com/lh3/bwa)
+[@li_aligning_2013].
+
+You might also want to consider read trimming and further processing of the
+alignmed BAM for variant calling such as realignment around
+indels and base recalibration. Mutation callers will usually include these
+steps in their pipeline documentation.
+
+
+## Mutation calling 
+
+Mutation calling is a complex classification task where the whole
+tumour BAM file is compared to the normal BAM file, differences have
+to be picked up and characterised, and finally each difference has to
+be classified as either a true somatic change or a technical artefact.
+
+For the clustering and SRC, we are starting from the substitutions, or
+single nucleotide variants (SNVs). Many algorithms have been proposed
+to call SNVs. Some perform better than others but the current good
+practice is to combined multiple callers into a consensus
+[@ewing_combining_2015], typically with a majority vote strategy,
+e.g. considering true variant if called by 2 out of 3 callers. 
+
+### Typical run with (a previous version of) MuTect
+Here, to illustrate a typical run, we show how a previous version of MuTect
+was run to generate the
+[**MuTect**](https://software.broadinstitute.org/cancer/cga/mutect_download)
+[@cibulskis_sensitive_2013] MuTect vcf files.
+
+
+```{r, eval=T, include=F}
+cmd <- paste0("java -Xmx8g -jar muTect-1.1.4.jar -T MuTect ",
+              "--tumor_lod 10 ",
+              "--tumor_sample_name T2 ",
+              "--normal_sample_name HG002 ",
+              "--reference_sequence hs37d5.fa ",
+              "--cosmic cosmic.header.vcf ",
+              "--dbsnp dbsnp.nochr.vcf ",
+              "--input_file:normal HG002.N.bam ",
+              "--input_file:tumor T2.T.128X.bam ",
+              "--out outFile.out ",
+              "--vcf outVcf.vcf ",
+              "--coverage_file outCoverage.wig")
+```
+
+```{r, eval=T, include=T, linewidth=90}
+print(cmd)
+```
+
+On new data,
+[MuTect2](https://gatk.broadinstitute.org/hc/en-us/articles/360037593851-Mutect2),
+which also allows to run on multiple samples, should be preferred over
+MuTect. 
+
+
+### False positives at low VAF
+
+Now, let's load the MuTect and perfect vcf files and compare them. We
+will compare the mutation calls as well as the distribution of variant
+allele frequencies (VAF), i.e. fraction of mutated reads.
+
+We will use a simple read.table function for minimal dependencies, but
+more sophisticated read functions are available for vcf files
+(e.g. *readVcf* from package *VariantAnnotation*).
+
+```{r, eval=T, include=T}
+vcf_perfect <- read.table("input/perfect_T2.T.128X_noXY.vcf",sep="\t")
+head(vcf_perfect)
+vcf_mutect <- read.table("input/mutect_T2.T.128X_noXY.vcf",sep="\t")
+head(vcf_mutect)
+```
+
+As we can see, some of the fields look similar, and are usually the
+mandatory vcf fields,  while others are formatted differently. This is
+documented in the vcf header.
+
+First we look at the chromosomal positions and the associated base
+changes and compare them between the two set of calls.
+
+
+```{r, eval=T, include=T, linewidth=90}
+mut_perfect <- do.call(function(...) paste(...,sep=":"),
+                       lapply(c(1,2,4,5),function(x) vcf_perfect[,x]))
+mut_mutect <- do.call(function(...) paste(...,sep=":"),
+                      lapply(c(1,2,4,5),function(x) vcf_mutect[,x]))
+list(count_perfect=length(mut_perfect),
+     count_mutect=length(mut_mutect),
+     count_intersect=length(intersect(mut_perfect,mut_mutect)))
+```
+
+So we see that mutect has missed a few mutations while calling a few
+extra ones as well. Typically, these false positives display low VAF,
+so let's verify this.
+
+The perfect calls store the tumour VAFs in the 8th column, while
+mutect calls store the tumour VAFs in the 11th column (named *tumor*)
+in the FA field. There are many ways to go about extracting this
+information. Here, we will use simple regular expression searches.
+
+
+```{r, eval=T, include=T}
+vaf_perfect <- as.numeric(gsub("(.*);VAF=(.*);DPR=(.*)","\\2",vcf_perfect[,8]))
+vaf_mutect <- as.numeric(gsub("(.*):(.*):(.*):(.*):(.*):(.*)","\\5",vcf_mutect[,11]))
+```
+
+```{r, eval=T, include=T}
+head(vaf_perfect)
+```
+
+We can then plot the histograms of VAF and compare MuTect to simulated.
+
+```{r, fig1, fig.height = 4, fig.width = 7, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig1}Variant allele frequency distributions: MuTect vs. simulated"}
+col_perfect <- rgb(.1,.2,.7,1)
+col_mutect <- rgb(.7,.2,.7,.2)
+hist(vaf_perfect, col=col_perfect, breaks=seq(0,1,.01), xlab="VAF", main="", border=NA)
+hist(vaf_mutect, col=col_mutect, breaks=seq(0,1,.01), add=T, border=NA)
+legend("topright", col=c(col_perfect, col_mutect), pch=19, c("perfect","mutect"),box.col=rgb(0,0,0,0))
+```
+
+As expected, MuTect has called extra mutations at low allele
+frequencies. 
+
+### Effect of read depth on the VAF distribution
+
+One can downsample a BAM file, i.e. keep only a fraction of the reads
+and these need to be randomly sampled. SAMtools has a function for
+this that makes this really easy, see *samtools view -s*. 
+Here, we will use the pre-computed vcf files on the downsampled BAM
+file. We load the vcf derived at 32X and the vcf derived at 128X and
+compare their VAF distribution.
+
+```{r, eval=T, include=T}
+vcf_perfect_32X <- read.table("input/perfect_T2.T.32X_noXY.vcf",sep="\t")
+vaf_perfect_32X <- as.numeric(gsub("(.*);VAF=(.*);DPR=(.*)","\\2",vcf_perfect_32X[,8]))
+```
+
+```{r, fig1b, fig.height = 2.5, fig.width = 7, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig1b}Variant allele frequency distributions: Simulated 32X vs. simulated 128X. Flattening of the VAF distribution at lower depth. Vertical lines show the cellular prevalence of the subclone divided by 2. That is where the VAF peak is expected for mutation falling in diploid regions."}
+
+col_perfect_32X <- rgb(.1,.1,.7/3,1)
+col_perfect <- rgb(.3,.1,.7,.3)
+par(mar=c(4,4,1,1))
+par(mfcol=c(1,2))
+hist(vaf_perfect_32X, col=col_perfect_32X, breaks=seq(0,.7,.005), xlab="VAF", main="",ylim=c(0,110),border=NA)
+abline(v=c(.55,.33,.17)/2,lwd=2,col=rgb(.6,.2,.4,1))
+legend("topright", pch="|", cex=.8, box.col=rgb(0,0,0,0),col=rgb(.6,.2,.4,1),as.expression(bquote(frac(CP[cluster],2))))
+hist(vaf_perfect, col=col_perfect, breaks=seq(0,.7,.005),xlab="VAF",main="",ylim=c(0,110),border=NA)
+abline(v=c(.55,.33,.17)/2,lwd=2,col=rgb(.6,.2,.4,1))
+legend("topright",
+       col=c(col_perfect_32X, col_perfect),
+       pch=19,
+       c("perfect 32X","perfect 128X"),
+       box.col=rgb(0,0,0,0),cex=.8)
+
+```
+
+
+
+\newpage
+## Copy number calling with Battenberg
+
+We have run [**Battenberg**](https://github.com/Wedge-Oxford/battenberg)
+to call copy number aberrations and flag subclonal
+segments. If you would like to run it as well, please follow the
+documentation on the [**github
+page**](https://github.com/Wedge-Oxford/battenberg) to install and run it.
+
+
+### How does it work
+
+To call subclonal copy number aberrations we will use an algorithm
+called Battenberg, which was originally published by Nik-Zainal and
+colleagues [@nik-zainal_life_2012].
+Battenberg methodology and algorithm are based on the code and
+equations of ASCAT [@van_loo_allele-specific_2010] to simultaneously
+derive purity and ploidy of tumour samples and call allele-specific
+clonal CNAs.
+
+Briefly, to infer ploidy \(\psi\) and purity \(\rho\) of the samples,
+ASCAT looks at how the logR \(r_i\) and the bi-allelic frequency (BAF)
+\(b_i\) of heterozygous SNPs are influenced by copy-number-induced allelic
+imbalances across the genome; as a consequence ASCAT will fail to
+report estimates for cancer genomes presenting no allelic imbalances, which is
+a rare case for cancers but not the expection for less advanced or
+benign tumours.
+
+Then to call CNAs given a sample's purity and ploidy, ASCAT solves a
+system of two equations with two unkowns formed by writing LogR and BAF of
+heterozygous SNPs as a function of the number of copies of allele A
+\(N_A\) and number of copies of allele B \(N_B\):
+
+\[\begin{array}{lcl} r_i&=&
+  log_2(\frac{2(1-\rho)+\rho(N_{A,i}+N_{B,i})}{\psi})\\ b_i&=&\frac{1-\rho+\rho N_{B,i}}{2-2\rho+\rho(N_{A,i}+N_{B,i})}
+\end{array}\]
+
+
+Where \(\rho\) is the purity and \(\psi\) is the average tissue
+ploidy.
+
+To remove noise only the BAF track is  segmented using piecewise
+constant fitting [@van_loo_allele-specific_2010].
+
+A grid search is then used to find the pair of realistic purity and ploidy values
+that minimises the genome-wide error between observed and expected \(N_A\) and
+\(N_B\) values. The expected \(N_A\) and \(N_B\) are approximated by
+rounding the observed \(N_A\) and \(N_B\) to the closest integers.
+
+Battenberg runs this clonal version of ASCAT and then infers subclonal
+regions by looking at significant deviations of BAF of heterozygous
+SNPs from the expected BAF of clonal states. If deviations are
+significant, Battenberg flags the segment as subclonal. However, the
+subclonal states are not trivially obtained from the logR and the BAF,
+as there are now more unkowns than equations.
+
+Using heuristics, Battenberg outputs a few possible solutions,
+i.e. up to 6 pairs of integer copy number states and their associated
+cancer cell fractions. For example, 1+1 in 70\% cancer cells and 2+1
+in 30\% cancer cells would translate into: 70\% of cancer cells
+carrying 1 copy of each allele, and 30\% of cancer cells carrying 2
+copies of the major allele and 1 copy of the minor allele.
+These pairs of states are chosen to be mixed states differing by one or
+two losses or gains from the closest clonal state that would
+correspond to the observed logR and BAF. The states are taken
+as combinations of integer states. Once the two mixed states are
+fixed, the cancer cell fractions (CCFs) (\(\tau\) and \(1-\tau\)) of
+these states \((N_{A,1}+N_{B,1})  \&  (N_{A,2}+N_{B,2})\) can be
+inferred from observed average BAF across the genomic segment \(b_s\):
+
+\[ \tau=\frac{1-\rho+\rho
+  N_{B,2}-2b_s(1-\rho)-b_s\rho(N_{A,2}+N_{B,2})}{b_s\rho(N_{A,1}+N_{B,1})-b_s\rho(N_{A,2}+N_{B,2})-\rho
+  N_{B,1}+\rho N_{B,2}}\]
+
+What is more Battenberg uses haplotyped SNPs to increase its
+sensitivity to detect the BAF deviations from expected BAF of clonal
+states. The haplotypes are imputed using impute2
+[@howie_flexible_2009] and a two-step segmentation stragegy of the
+BAF track helps take advantage of these imputed haplotypes.
+Briefly, haplotyped SNPs translate into phased BAF values, but also
+include switching errors. Therefore first the phased BAF track is
+segmented using a very sensitive segmentation. This identifies
+haplotypes and longer phased blocks. Then BAF values are mirrored per
+segment to have a segment average above 0.5, i.e. if(average(BAF)<0.5)
+BAF=1-BAF. Finally, a more specific segmentation is run to obtain the
+final segments.
+
+The last step is to go through each segment's BAF and LogR to call the
+segment state(s), as described above.
+
+
+### How does it look
+
+
+First we note that the Battenberg profile is named *refit*. This
+indicates that the default fit was not a good one and manual
+inspection and refitting were necessary. Below we show the default fit
+found by Battenberg and the refitted profile.
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{figures/T2-128X_BattenbergProfile_average.png}
+  \caption{\textbf{Battenberg default profile.} Along the genome on the x-axis,
+  copy number of the minor (dark blue) and total (orange) per chromosome.}
+  \label{Figure4}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{figures/T2-128X_BattenbergProfile.refit_average.png}
+  \caption{\textbf{Battenberg refitted profile.} Along the genome on the x-axis,
+  copy number of the minor (dark blue) and total (orange) per chromosome.}
+  \label{Figure5}
+\end{figure}
+
+This is a good illustration of the ambiguity of *in silico* ploidy
+estimates. The default fit proposes twice the actual ploidy. This is
+likely because of the subclonal loss on chromosome 16 which is almost
+at 50% of the main clone CP, which brings this segment closer to an
+integer in the whole-genome duplicated fit.
+
+After the manual refit, the ploidy and the purity better match the simulation design. 
+
+The previous figures are generated by Battenberg. We can also derive
+them ourselves from the copy number profile. Now we load the
+Battenberg CNA profile -we only keep the first thirteen columns-,
+which include only one of the possible solutions for subclonal
+segments. Then we plot the genomewide profile.
+
+
+```{r, eval=T, echo=T}
+cna_bb <- read.table("input/T2-128X_refit_subclones_noXY.txt",sep="\t",header=T)[,1:13]
+head(cna_bb)
+```
+
+
+The columns indicate the chromosome, start, end of the segments, their
+average BAF, p-value of being subclonal (i.e. non-integer given the
+purity ahd ploidy values), the LogR, the non-rounded total copies, the
+number of copies of the major allele, and the minor allele and the
+fraction of cells in which these states are present. If subclonal the
+segment is detected as subclonal, the latter is lower than 1 and a
+second copy number state is given together with the fraction of cancer
+cells in which it is present. There is too much ambiguity in those
+states, and while these states are not consistent across CNA methods,
+CNA methods usually agree on whether the segment should be deemed subclonal.
+
+
+Now, let's visualise the total and minor copies along the genome.
+
+
+```{r, fig2, fig.height = 2, fig.width = 7, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig2} Battenberg plot from the input file. Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome. "}
+add <- plot_cna(cna_bb)
+```
+
+Importantly, this figure is showing genomic position on the x-axis
+while the Battenberg figures are showing SNP index. The latter is very
+useful to visualise relative number of SNPs per chromosome and
+identify characteristics of the run, such as long stretches of
+homozygosity, often seen in inbred population. This stretches are
+blindspots for segmentation with Battenberg, which is based solely on
+the BAF of heterozygous SNPs.
+
+
+### Impact of read depth on CNA
+
+The VAF of a given SNV is influenced the tumour purity and its number
+of bearing copies. The noise on the VAF estimate is pretty much
+directly defined by the read depth, which can be a limiting factor. 
+
+For copy number, the length of the implicated segment comes into play
+as well. Large copy number events can be picked up in single cells
+with coverage as low as 0.1X. 
+
+So far, there has been no consistent benchmarking of methods for copy
+number calling. We only know that they agree pretty well for
+single-sample bulk whole-genome sequencing around 60X [@dentro_portraits_2018].
+
+
+\newpage
+## Subclonal reconstruction with DPClust
+
+### VAF to CCF
+
+When clustering mutations, the assumptions is that mutations
+present in the same fraction of cells are more likely to belong to the
+same most recent common ancestor of a large population of cells,
+i.e. a subclone. Therefore, we need to estimate in what fraction of cells
+these mutations are present, which is by deriving the cellular
+prevalence (CP) or cancer cell fraction (CCF), with \[CCF=\frac{CP}{purity}\].
+
+The CP or CCF is inferred from the VAF, which is influenced by the
+number of tumour DNA copies bearing the mutation or "multiplicity" and
+the purity. While the purity is a global variable inferred mostly through CNA calling and can be
+further refined with SNV, the multiplicity is inferred on a
+per-mutation basis.
+
+
+
+
+```{r, fig6, fig.height = 2.5, fig.width = 7, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig6} Illustrate the effect of copy number on mutation VAF"}
+snv <- vcf_perfect
+vafsT <- vaf_perfect
+intervals <- read.table("input/intervals.filtered.bed")
+maxpos.chr <-  sapply(unique(intervals[,1]),function(x) max(intervals[intervals[,1]==x,3]))/1000000
+plotseg <- function(t,v,ylim)
+{
+    chr <- t[,1]
+    maxpos <- cumsum(c(0,maxpos.chr[-c(length(unique(chr)))]))
+    names(maxpos) <- unique(chr)
+    npos <- sapply(1:nrow(t),function(x) t[x,2]/1000000+maxpos[unique(chr)[unique(chr)==t[x,1]]])
+    plot(npos,
+         v,
+         pch=19,
+         cex=.15,
+         col=rgb(0,0,0,.7),
+         ylim=ylim,
+         ylab="",
+         cex.axis=.6,cex.lab=.5,padj=1,
+         xaxt="n",
+         frame=F,
+         xlab="")
+    title(ylab="VAF", line=1, cex.lab=.7)
+    abline(v=cumsum(maxpos.chr),lty=2,col=rgb(0,0,0,.5))
+    text(cumsum(maxpos.chr)-30,rep(.5,length(unique(chr))),unique(chr),col=rgb(0,0,0,.5),cex=1)
+    abline(h=c(.55,.33,.17)/2,lwd=3,col=rgb(.4,0,0,.3)) ## expected VAF peaks in diploid regions
+}
+par(mar=c(1,2,1,0))
+suppressWarnings(plotseg(snv,vafsT,ylim=c(0,.5)))
+```
+
+
+On the previous figure, we see that for the lost chromosomes, because
+there are now relatively more copies of sequenced DNA bearing the
+mutations falling in those regions, the VAF is higher.
+
+The mutation copy number of a given SNV is computed as: 
+
+\[ mutcopynumber=\frac{VAF}{\rho}(\rho N_{tumour} + (1-\rho) N_{normal})\]
+
+Where \(N_{tumour}\) is the number of DNA copies in the tumour. In our
+sample, \(\rho\) equals 0.55. Let's look at mutations in 1+0 tumour regions (1
+copy of the major, 0 copies of the minor). If their VAF is around 0.4
+as in the figure, their mutation copy number is \[\frac{0.4}{0.55}(1\times0.55+2\times0.45)\approx
+                                1\]. 
+
+The mutation copy number is an estimate of the multiplicity, which is
+an integer representing the number of bearing DNA copies bearing the
+mutation. Dividing the mutation copy number by the multiplicity gives
+the CCF: \[CCF=\frac{mutcopynumber}{multiplicity}\]
+
+
+Most clustering method infer the multiplicity and then the CCF, and
+for this, DPClust uses a preprocessing package
+[dpclust3p](https://github.com/Wedge-Oxford/dpclust_smchet_docker/blob/master/dpclust3p_v1.0.6.tar.gz).
+
+We will now run the main function of this package on our data.
+
+
+```{r, eval=F}
+lociFile  <- "loci.txt"
+vcfFile <- "input/perfect_T2.T.128X_noXY.vcf"
+subcloneFile <- "input/T2-128X_refit_subclones_noXY.txt"
+alleleCountsFile <- "alleleCountsFile.txt"
+cellFile <- "input/T2-128X_refit_cellularity_ploidy.txt"
+rhoPsiFile <- "rhoPsiFile.txt"
+rhopsip <- read.table(cellFile,header=T)
+dpInputFile <- "dpInput.txt"
+writeRhoPsi(rhopsip[1],rhopsip[2],rhopsip[3])
+createAlleleCountsFile(vcfFile=vcfFile, isperfect=T, outfile=alleleCountsFile)
+library(GenomicRanges)
+library(dpclust3p)
+suppressWarnings(runGetDirichletProcessInfo(loci_file=lociFile,
+                                            allele_frequencies_file=alleleCountsFile,
+                                            cellularity_file=rhoPsiFile,
+                                            subclone_file=subcloneFile,
+                                            gender="male",
+                                            SNP.phase.file="NA",
+                                            mut.phase.file="NA",
+                                            output_file=dpInputFile))
+```
+
+Let's have a look at the results, especially the mutation copy number
+vs. the copy number. In this sample, the multiplicities  cannot be
+greater than 1, because there are no gained copy number.
+
+
+```{r, fig7, fig.height = 2.5, fig.width = 7, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig7} Mutation copy number vs. DNA copy number."}
+dpinput <- read.table(dpInputFile,sep="\t",header=T)
+add <- plot_cna(cna_bb)
+addMut(dpinput,add)
+```
+
+Because we have that \(CCF=\frac{mutcopynumber}{multiplicity}\), in
+this sample, where \(multiplicity=1\), \(CCF=mutcopynumber\).
+
+Let's look at the distribution of CCF of mutations in non-subclonal
+copy number segments.
+
+
+```{r, fig8, fig.height = 3.5, fig.width = 5, fig.align = "center", eval=T, echo=F, hold=T, fig.cap="\\label{fig8} Distribution of CCF. Vertical lines indicate the expected CCF of the clones."}
+hist(dpinput[which(dpinput$frac1==1),"mutation.copy.number"],
+     breaks=seq(0,2,0.02),
+     col=rgb(0,0,0,.5),border=NA,
+     xaxt="n",
+     xlab="CCF",main="")
+axis(side=1,at=c(0,.5,1),c(0,.5,1))
+abline(v=c(.55,.33,.17)/.55,lwd=2,col=rgb(.6,.2,.4,1))
+legend("topright", pch="|", cex=.8, box.col=rgb(0,0,0,0),
+       col=rgb(.6,.2,.4,1),
+       as.expression(bquote(CCF[cluster])))
+```
+
+This looks like an easy clustering task, which is expected since the
+depth of coverage is so high. 
+
+
+### Clustering
+
+DPClust is a clustering method that allows to automatically find the size, the
+number and the location of clusters of mutations at the same CCF
+value. 
+It was first described by Nik-Zainal and colleagues
+[@nik-zainal_life_2012]. We will now run DPClust on the mutations,
+after integrating them with the Battenberg copy number profiles.
+
+Next we run DPClust on the dpclust input file that we generated. This
+file contains all the necessary information for DPClust to run.
+
+An important aspect of DPClust is that it has strong default prior on
+the concentration parameter, which will impact on the
+concentration/number of clusters. Not all methods put a strong prior
+on this parameter and allow for it to be influenced by the underlying
+data. We will try and run DPClust with different values of this parameter. 
+
+The DPClust R package used here can be downloaded from
+[**github**](https://github.com/Wedge-Oxford/dpclust_smchet_docker/blob/master/dpclust_v2.2.5.tar.gz). DPClust
+has several dependencies, and there is a
+[**Docker**](https://github.com/Wedge-Oxford/dpclust_smchet_docker/blob/master/Dockerfile)
+file available to install DPClust and all its dependencies. If you
+have already installed R, the following packages are required: 
+
+> BiocManager::install(c("VariantAnnotation",
+>                        "mcclust","KernSmooth","ks","lattice",
+>                        "ggplot2","gridExtra","reshape2"))
+
+```{r, eval=F}
+## load DPClust
+library(DPClust)
+## load the data
+cellularity <- read.table("input/T2-128X_refit_cellularity_ploidy.txt",header=T)[,"cellularity"]
+conc_param <- 0.01
+dataset  <-  load.data(dpInputFile, 
+                       cellularity=cellularity, 
+                       Chromosome="chr", 
+                       position="end",
+                       WT.count="WT.count", 
+                       mut.count="mut.count", 
+                       subclonal.CN="subclonal.CN", 
+                       no.chrs.bearing.mut="no.chrs.bearing.mut", 
+                       mutation.copy.number="mutation.copy.number", 
+                       subclonal.fraction="subclonal.fraction", 
+                       phase="phase",
+                       is.male=T,
+                       is.vcf=F,
+                       ref.genome.version="hg19",
+                       min.depth=1,
+                       min.mutreads=0,
+                       supported_chroms=as.character(1:22))
+## run DPClust
+clustering  <-
+    DirichletProcessClustering(mutCount=dataset$mutCount, 
+                               WTCount=dataset$WTCount, 
+                               no.iters=1250, 
+                               no.iters.burn.in=250, 
+                               cellularity=cellularity, 
+                               totalCopyNumber=dataset$totalCopyNumber, 
+                               mutation.copy.number=dataset$mutation.copy.number,
+                               copyNumberAdjustment=dataset$copyNumberAdjustment, 
+                               mutationTypes=dataset$mutationType,
+                               samplename="T2", 
+                               subsamplesrun=c(),
+                               output_folder="./output_0.01", 
+                               conc_param=conc_param, 
+                               cluster_conc=5,
+                               mut.assignment.type=1,
+                               most.similar.mut=NA,
+                               min.frac.snvs.cluster=0.01, 
+                               max.considered.clusters=20)
+writeStandardFinalOutput(clustering=clustering, 
+                         dataset=dataset,
+                         most.similar.mut=NA,
+                         outfiles.prefix="output_0.01/T2-0.01",
+                         subsamplenames=c(),
+                         assign_sampled_muts=T,
+                         write_tree=F)
+
+```
+
+
+Let's look at the results. DPClust outputs a figure showing the
+location and size of the identified clusters in the CCF space.
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{output_0.01/T2_DirichletProcessplot_with_cluster_locations_2.png}
+  \caption{\textbf{DPClust main output figure for single sample.}
+  The histogram of the CCF values is shown and the location and
+  density distribution of the clusters inferred by DPClust is shown on top.}
+  \label{Figure6}
+\end{figure}
+
+
+It looks like DPClust has found an extra cluster between the two
+subclones, and a substantial proportion of the clonal mutations have
+been assigned to subclones. 
+
+
+Next we will first try running DPClust with a different concentration
+parameter (from 0.01 we change it to 1).
+
+```{r, eval=F, include=F}
+conc_param <- 1
+clustering_cp1  <-  DirichletProcessClustering(mutCount=dataset$mutCount, 
+                                               WTCount=dataset$WTCount, 
+                                               no.iters=1250, 
+                                               no.iters.burn.in=250, 
+                                               cellularity=cellularity, 
+                                               totalCopyNumber=dataset$totalCopyNumber, 
+                                               mutation.copy.number=dataset$mutation.copy.number,
+                                               copyNumberAdjustment=dataset$copyNumberAdjustment, 
+                                               mutationTypes=dataset$mutationType,
+                                               samplename="T2", 
+                                               subsamplesrun=c(),
+                                               output_folder="./output_1.00", 
+                                               conc_param=conc_param, 
+                                               cluster_conc=5,
+                                               mut.assignment.type=1,
+                                               most.similar.mut=NA,
+                                               min.frac.snvs.cluster=0.01, # Minimum fraction of total SNVs required to call a subclone real
+                                               max.considered.clusters=20)
+writeStandardFinalOutput(clustering=clustering_cp1, 
+                         dataset=dataset,
+                         most.similar.mut=NA,
+                         outfiles.prefix="output_1.00/T2-1.00",
+                         subsamplenames=c(),
+                         assign_sampled_muts=T,
+                         write_tree=F)
+
+```
+
+\begin{figure}[H]
+  \centering
+  \includegraphics{output_1.00/T2_DirichletProcessplot_with_cluster_locations_2.png}
+  \caption{\textbf{DPClust main output figure for single sample (concentration parameter x100).}
+  The histogram of the CCF values is shown and the location and
+  density distribution of the clusters inferred by DPClust is shown on top.}
+  \label{Figure7}
+\end{figure}
+
+
+In this solution, we can see two very closeby clusters, which, if they
+were real, would need to be linear due to the pigeonhole
+principle. Rather arbitrarily, we tend to merge together clusters that
+are too close in CCF space. In single-sample studies, they do not add
+much, besides, we do not think that we have the power to distinguish
+between those. Similarly we remove clusters that are *too small* (e.g.
+<50 mutations or <1% of mutation load) as well as superclonal clusters. 
+
+Thus, if we were to use this concentration parameter (1), the solution
+is actually pretty good after merging and removing of the small
+cluster. The true number of clusters, their CCF and associated number
+of SNVs are:
+
+
+| Subclone      | CCF     |  N SNV |
+|---------------|:-------:|-------:|
+| 1             |  1.00   | 2100   |
+| 2             |  0.60   | 1650   |
+| 3             |  0.31   | 600    |
+
+In the previous run, DPClust has identified 3 clusters:
+
+
+| Subclone      | CCF     |  N SNV |
+|---------------|:-------:|-------:|
+| 1             |  1.01   | 1787   |
+| 2             |  0.62   | 1706   |
+| 3             |  0.27   | 491    |
+
+
+This is not far from the truth. What about mutation assignment? We can
+see that there are less mutations that have been clustered than there
+are in the design. 
+This is partly because a few mutations are removed and re-assigned
+posthoc, so they are present in the assignment files, and partly
+because mutations with 0 alternate read counts are not present
+in the truth file at all. 
+Let's have a look at the contigency table of assignment.
+
+
+```{r, include=F}
+truth2A <- read.table("input/T2-noXY.truth.2A.txt")[,1]
+vcf_truth <- read.table("input/T2-noXY.truth.scoring_vcf.vcf",sep="\t")
+vcf_truth <- vcf_truth[vcf_truth[,12]=="True",]
+pos_truth <- paste(vcf_truth[,1],vcf_truth[,2],sep=":")
+names(truth2A) <- pos_truth
+head(truth2A)
+assign_1.00 <- read.table("output_1.00/T2-1.00_bestConsensusAssignments.bed",
+                          sep="\t",header=T)
+pos_assign <- paste(assign_1.00[,1],assign_1.00[,2]+1,sep=":")
+assign2A <- assign_1.00[,4]
+names(assign2A) <- pos_assign
+contingency_table <- table(dpclust=as.character(assign2A[names(truth2A)]),
+                           truth=as.character(truth2A),
+                           useNA="always")
+
+```{r, include=T}
+kable(contingency_table,"latex", booktabs=T) %>%
+    kable_styling(position="center") %>%
+    add_header_above(c("","Truth"=4))
+```
+
+In the DPClust predictions, some mutations were not assigned to any
+cluster, usually because they did not fall on any copy number
+segments. The clustering contigency table looks relatively good, but
+this is not unexpected as such high depth. With such prediction, we
+can start characterising mutational signatures clonal vs. subclonal,
+and between subclone. 
+
+Now let's talk about the phylogeny.
+
+\newpage
+### Phylogenetic tree  
+
+#### Single-sample tree
+Once the clustering of SNVs is obtained, the tree building can
+start. Some methods have part or whole of the following process built
+in. For example DPClust can take phasing of mutation as input to infer
+linear vs. branching subclones.
+
+But here, we go through this step manually. Often the tree building
+from single samples is rather uninformative. 
+
+There are few observations that can help disambiguate the phylogenetic
+relationship (i.e. linear vs. branching) between subclones:
+\begin{itemize}
+\item{linear relationship}
+  \begin{itemize}
+ \item{the pigeonhole principle: the sum of ccfs of branching
+     subclones at same tree height should be <=100\% of the ccf of
+     their most recent common ancestor. Indeed if it was >100\%, this
+     would mean that at least a few cells carry the same set of
+     mutations. However, according to the infinite sites hypothesis, the same set of random mutations is highly
+     unlikely to happen twice by chance alone. Therefore the
+     smaller subclone must be a descendant of the bigger subclone.}
+ \item{phasing of two mutations assigned to different clusters A and B, resp. If two
+     mutations are present on the same read pair, they must have been
+     present in the same cell. This means that at least one cell of subclone A and
+     one cell of subclone B carried the same mutation. Moreover, under
+     the infinite site hypothesis, each mutation appeared only once,
+	 hence, subclone A and B must be linearly related. }
+ \end{itemize}
+\item{branching relationship}
+  \begin{itemize}
+  \item{two significantly mutually exclusive mutations on haploid
+      regions that are assigned to different clusters. On a clonally haploid
+      region of the genome (i.e. 1 copy of allele A and 0 copies of
+      allele B), only one copy of the genome is left to be
+      mutated in cancer cells. Given two mutations assigned to two linear subclones,
+      located in this haploid region and close to each other (distance
+      below the read length), it is expected that the
+      reads carrying the mutation of the smaller subclone should carry
+	  the mutation of the larger subclone. If these two mutations are
+      mutually exclusive, they must belong to branching subclones.}
+  \end{itemize}
+\end{itemize}
+
+In our sample, there is no way to know if the two subclones are linear
+or branching. The sum of their \(CCF_{subcloneA}+CCF_{subcloneB}<1\),
+so it could be both linear or branching. Usually, it is easier to call
+linear than branching. But, if looking at mutation phasing in haploid
+regions only, the proportion of linear vs. branching subclone can be
+compared. 
+
+#### Note on multi-sample tree
+
+With DPClust, multi-sample trees are also derived mostly manually. The
+clustering process generalises trivially to multiple dimensions, and
+the same code can be used to load the mutations from multiple
+samples. 
+
+An important step is to make sure the union of all mutations across
+samples has been *genotyped* if not called in all of them. Indeed,
+mutations called in a given sample might have been missed in another
+although the alternate read count is positive, i.e.\(VAF>0\). 
+It is thus important to rederive the alternate
+and reference counts for all mutations in all samples before the
+clustering.
+
+
+\newpage
+# Conclusion
+
+In this guide, we have reviewed the steps of SRC one-by-one, running
+them on a simulated tumour for which we know the underlying
+phylogeny and subclonal structure. This has helped gain insight into
+the practicalities behind SRC. 
+
+We have seen that mutation callers can include false positives at low
+VAF, as well as false negatives. Copy number calling is ambiguous
+because the ploidy can always be doubled to fit the data to integers
+and manual refitting, which is often arbitrary, needs to be
+performed. Unless given the ploidy experimentally (here we know it
+from the truth design), there is little way to be sure about the
+fit. There are hints in the data that can help diagnose bad copy
+number fits, for example wrong purity can be seen when reconstructing
+the CCF of SNVs and the highest peak is not at CCF=1 (i.e. the peak of
+clonal mutation).
+
+We have illustrated the impact of read depth on the VAF distribution
+and CNA calling. 
+
+We have shown how some parameters of the clustering method can be
+tweaked to lead to slightly different results, especially the
+concentration parameter in DPClust, which can lead to different number of
+clusters and reconstruction.
+
+Altogether, single-sample-based SRC is not very informative about the
+phylogeny and a lot of the sources of noise and ambiguities, such as
+clustering of mutation and inferring phylogenetic relationships, can be
+largely reduced using multi-sample strategies. 
+
+Unfortunately, multi-sample strategies are not always possible but
+single-sample studies remain informative about the subclonality of
+mutations and especially targetable drivers, their associated mutation processes
+and the timing of the MRCA.
+
+Once the subclonal strucutre is obtained, post-hoc assignment of other
+types of variants, such as indels and structural variants can be
+performed. Methods such as
+[**MutationTimer**](https://github.com/gerstung-lab/MutationTimeR) are
+designed to do this [@gerstung_evolutionary_2020].
+
+\newpage
+# References
