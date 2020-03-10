@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.11.7)  28 FEB 2020 15:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.11.7)  10 MAR 2020 11:00
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -753,124 +753,127 @@ ne 160.
 (pdftex.def)             Requested size: 469.76837pt x 266.65392pt.
 [2 <./figures/fig1_pipelineOutline.pdf>] [3]
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 2
-82.
+85.
 (/usr/local/texlive/2019basic/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 283.
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 286.
 [4]
-<"src_guide_files/figure-latex/""fig1-1".pdf, id=142, 505.89pt x 289.08pt>
+<"src_guide_files/figure-latex/""fig1-1".pdf, id=142, 466.74374pt x 220.825pt>
 File: "src_guide_files/figure-latex/""fig1-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig1-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig1-1".pdf  used on i
-nput line 419.
-(pdftex.def)             Requested size: 469.76265pt x 268.43579pt.
+nput line 422.
+(pdftex.def)             Requested size: 466.76396pt x 220.83455pt.
 [5]
-<"src_guide_files/figure-latex/""fig1b-1".pdf, id=147, 505.89pt x 180.675pt>
+<"src_guide_files/figure-latex/""fig1b-1".pdf, id=147, 485.815pt x 164.615pt>
 File: "src_guide_files/figure-latex/""fig1b-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig1b-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig1b-1".pdf  used on 
-input line 449.
-(pdftex.def)             Requested size: 469.76265pt x 167.77237pt.
-[6 <./src_guide_files/figure-latex/fig1-1.pdf>] [7 <./src_guide_files/figure-la
-tex/fig1b-1.pdf>] [8]
-<"figures/""T2-128X_BattenbergProfile_average".png, id=193, 722.7pt x 180.675pt
+input line 452.
+(pdftex.def)             Requested size: 469.74998pt x 159.17148pt.
+[6 <./src_guide_files/figure-latex/fig1-1.pdf> <./src_guide_files/figure-latex/
+fig1b-1.pdf
+
+pdfTeX warning: pdflatex (file ./src_guide_files/figure-latex/fig1b-1.pdf): PDF
+ inclusion: multiple pdfs with page group included in a single page
+>] [7]
+<"figures/""T2-128X_BattenbergProfile_average".png, id=194, 722.7pt x 180.675pt
 >
 File: "figures/""T2-128X_BattenbergProfile_average".png Graphic file (type png)
 
 <use "figures/""T2-128X_BattenbergProfile_average".png>
 Package pdftex.def Info: "figures/""T2-128X_BattenbergProfile_average".png  use
-d on input line 557.
+d on input line 560.
 (pdftex.def)             Requested size: 469.76045pt x 117.4401pt.
-<"figures/""T2-128X_BattenbergProfile.refit_average".png, id=194, 722.7pt x 180
+<"figures/""T2-128X_BattenbergProfile.refit_average".png, id=195, 722.7pt x 180
 .675pt>
 File: "figures/""T2-128X_BattenbergProfile.refit_average".png Graphic file (typ
 e png)
 <use "figures/""T2-128X_BattenbergProfile.refit_average".png>
 Package pdftex.def Info: "figures/""T2-128X_BattenbergProfile.refit_average".pn
-g  used on input line 565.
+g  used on input line 568.
 (pdftex.def)             Requested size: 469.76045pt x 117.4401pt.
-[9 <./figures/T2-128X_BattenbergProfile_average.png (PNG copy)> <./figures/T2-1
+[8 <./figures/T2-128X_BattenbergProfile_average.png (PNG copy)> <./figures/T2-1
 28X_BattenbergProfile.refit_average.png (PNG copy)>]
-<"src_guide_files/figure-latex/""fig2-1".pdf, id=203, 505.89pt x 144.54pt>
+<"src_guide_files/figure-latex/""fig2-1".pdf, id=204, 489.83pt x 116.435pt>
 File: "src_guide_files/figure-latex/""fig2-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig2-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig2-1".pdf  used on i
-nput line 626.
-(pdftex.def)             Requested size: 469.76265pt x 134.21788pt.
-[10 <./src_guide_files/figure-latex/fig2-1.pdf>]
-<"src_guide_files/figure-latex/""fig6-1".pdf, id=219, 505.89pt x 180.675pt>
+nput line 629.
+(pdftex.def)             Requested size: 469.76805pt x 111.66617pt.
+[9 <./src_guide_files/figure-latex/fig2-1.pdf>]
+<"src_guide_files/figure-latex/""fig6-1".pdf, id=223, 500.87125pt x 152.57pt>
 File: "src_guide_files/figure-latex/""fig6-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig6-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig6-1".pdf  used on i
-nput line 682.
-(pdftex.def)             Requested size: 469.76265pt x 167.77237pt.
-[11 <./src_guide_files/figure-latex/fig6-1.pdf>]
-<"src_guide_files/figure-latex/""fig7-1".pdf, id=237, 505.89pt x 180.675pt>
+nput line 685.
+(pdftex.def)             Requested size: 469.77962pt x 143.0992pt.
+[10 <./src_guide_files/figure-latex/fig6-1.pdf>]
+<"src_guide_files/figure-latex/""fig7-1".pdf, id=244, 489.83pt x 152.57pt>
 File: "src_guide_files/figure-latex/""fig7-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig7-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig7-1".pdf  used on i
-nput line 746.
-(pdftex.def)             Requested size: 469.76265pt x 167.77237pt.
-<"src_guide_files/figure-latex/""fig8-1".pdf, id=238, 361.35pt x 252.945pt>
+nput line 748.
+(pdftex.def)             Requested size: 469.76805pt x 146.3212pt.
+<"src_guide_files/figure-latex/""fig8-1".pdf, id=245, 323.2075pt x 175.65625pt>
+
 File: "src_guide_files/figure-latex/""fig8-1".pdf Graphic file (type pdf)
 <use "src_guide_files/figure-latex/""fig8-1".pdf>
 Package pdftex.def Info: "src_guide_files/figure-latex/""fig8-1".pdf  used on i
-nput line 761.
-(pdftex.def)             Requested size: 361.34912pt x 252.94438pt.
-[12 <./src_guide_files/figure-latex/fig7-1.pdf>]
-Underfull \hbox (badness 10000) in paragraph at lines 797--800
+nput line 763.
+(pdftex.def)             Requested size: 323.2215pt x 175.66383pt.
+[11 <./src_guide_files/figure-latex/fig7-1.pdf>]
+Underfull \hbox (badness 10000) in paragraph at lines 802--805
 []\T1/lmr/m/n/10 (+20) BiocManager::install(c(``VariantAnnotation'', ``mc-clust
 '',``KernSmooth'',``ks'',``lattice'', ``gg-
  []
 
-[13 <./src_guide_files/figure-latex/fig8-1.pdf>]
-<"output_0.01/""T2_DirichletProcessplot_with_cluster_locations_2".png, id=271, 
+[12 <./src_guide_files/figure-latex/fig8-1.pdf>]
+<"output_0.01/""T2_DirichletProcessplot_with_cluster_locations_2".png, id=284, 
 1505.625pt x 1003.75pt>
 File: "output_0.01/""T2_DirichletProcessplot_with_cluster_locations_2".png Grap
 hic file (type png)
 <use "output_0.01/""T2_DirichletProcessplot_with_cluster_locations_2".png>
 Package pdftex.def Info: "output_0.01/""T2_DirichletProcessplot_with_cluster_lo
-cations_2".png  used on input line 861.
+cations_2".png  used on input line 866.
 (pdftex.def)             Requested size: 469.74852pt x 313.16568pt.
-[14]
-<"output_1.00/""T2_DirichletProcessplot_with_cluster_locations_2".png, id=277, 
+[13]
+<"output_1.00/""T2_DirichletProcessplot_with_cluster_locations_2".png, id=291, 
 1505.625pt x 1003.75pt>
 File: "output_1.00/""T2_DirichletProcessplot_with_cluster_locations_2".png Grap
 hic file (type png)
 <use "output_1.00/""T2_DirichletProcessplot_with_cluster_locations_2".png>
 Package pdftex.def Info: "output_1.00/""T2_DirichletProcessplot_with_cluster_lo
-cations_2".png  used on input line 877.
+cations_2".png  used on input line 882.
 (pdftex.def)             Requested size: 469.74852pt x 313.16568pt.
-[15 <./output_0.01/T2_DirichletProcessplot_with_cluster_locations_2.png>]
-Overfull \vbox (2.95784pt too high) has occurred while \output is active []
-
-[16 <./output_1.00/T2_DirichletProcessplot_with_cluster_locations_2.png>] [17]
+[14 <./output_0.01/T2_DirichletProcessplot_with_cluster_locations_2.png>] [15 <
+./output_1.00/T2_DirichletProcessplot_with_cluster_locations_2.png>] [16]
 LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 9
-84.
+93.
 (/usr/local/texlive/2019basic/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [18] [19]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1153.
-[20]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1153.
+) [17] [18]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1162.
+[19]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1162.
 (./src_guide.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1153.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1153.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1162.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1162.
 
 Package rerunfilecheck Info: File `src_guide.out' has not changed.
-(rerunfilecheck)             Checksum: DF1C1587AEB34E5ED9BB2C609AE4C588;2085.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1153.
+(rerunfilecheck)             Checksum: 1C2D03B5CB21C4FC4E61D185DBA65B5E;2335.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 1162.
  ) 
 Here is how much of TeX's memory you used:
- 14765 strings out of 493610
- 221420 string characters out of 6159293
- 332904 words of memory out of 5000000
+ 14770 strings out of 493610
+ 221515 string characters out of 6159293
+ 332918 words of memory out of 5000000
  18523 multiletter control sequences out of 15000+600000
- 52298 words of font info for 96 fonts, out of 8000000 for 9000
+ 52594 words of font info for 99 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 38i,9n,42p,972b,447s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 38i,9n,42p,972b,449s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2019basic/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/
 local/texlive/2019basic/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/usr/local/tex
 live/2019basic/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/local/texlive/
@@ -890,10 +893,10 @@ ive/2019basic/texmf-dist/fonts/type1/public/lm/lmsy7.pfb></usr/local/texlive/20
 19basic/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2019bas
 ic/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2019basic/te
 xmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on src_guide.pdf (20 pages, 942669 bytes).
+Output written on src_guide.pdf (19 pages, 944838 bytes).
 PDF statistics:
- 423 PDF objects out of 1000 (max. 8388607)
- 353 compressed objects within 4 object streams
- 97 named destinations out of 1000 (max. 500000)
+ 435 PDF objects out of 1000 (max. 8388607)
+ 360 compressed objects within 4 object streams
+ 96 named destinations out of 1000 (max. 500000)
  10408 words of extra memory for PDF output out of 12000 (max. 10000000)
 

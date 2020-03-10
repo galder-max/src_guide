@@ -121,7 +121,7 @@
     \preauthor{}\postauthor{}
       \predate{\centering\large\emph}
   \postdate{\par}
-    \date{28 February 2020}
+    \date{10 March 2020}
 
 \usepackage{caption} \usepackage{float}
 
@@ -143,12 +143,12 @@
 \hypertarget{about-this-guide}{%
 \subsection{About this guide}\label{about-this-guide}}
 
-In this guide we will go through the steps of reconstructing a tumour
+In this guide we will go through the steps of reconstructing a tumour's
 subclonal architecture (\textbf{Figure\ref{Figure1}A}). For simplicity,
 we will be starting from one pair of patient-matched simulated tumour
 and normal bam files.
 
-These bam files have been simulated using
+These BAM files have been simulated using
 \href{https://github.com/adamewing/bamsurgeon}{\textbf{BAMSurgeon}} to
 correspond to a pre-designed tumour phylogeny shown on
 \textbf{Figure\ref{Figure1}B}. Knowing the true mutations, copy number
@@ -159,20 +159,22 @@ give maximal insight into the concepts at each step of the pipeline.
   \centering
   \includegraphics{figures/fig1_pipelineOutline.pdf}
   \caption{A. Pipeline outline. We will go through each step in this
-  guide. B. Simulated tumour phylogeny. A few thousands SNV, 3 lost
-  chromosome clonally and one lost chromosome subclonally. 
+  guide. B. Simulated tumour phylogeny. A few thousand SNVs, clonal
+  loss of 3 chromosomes and subclonal loss of one chromosome. 
   The simulated BAM, vcf and copy number outputs are available
   for download (see next section).}
   \label{Figure1}
 \end{figure}
 
-For each step of the SRC, we have chosen one method for illustration
-purposes. However, the choice of the methods should be carefully
-considered by the user. Indeed, different methods will have different
-behaviour and might be better suited for the type of samples or project
-at hand. In the main text, we only recommend methods with specific
-characteristics, e.g.~take into account copy number, Beta or Binomial
-models, picking one/the best method is not the subject of this guide.
+For each step of the SRC, we have chosen one tool for illustration
+purposes (alignment with BWA-mem, mutation calling with MuTect,
+copy-number calling with Battenberg and clustering with DPClust).
+However, the choice of the methods should be carefully considered by the
+user. Indeed, different methods will have different behaviours and might
+be better suited for the type of samples or project at hand. In the main
+text, we only recommend methods with specific characteristics, e.g.~take
+into account copy number, Beta or Binomial models, picking one/the best
+method is not the subject of this guide.
 
 Although, we will cover some of the theoretical aspects of the different
 methods and SRC in this practical guide, we recommend a more in-depth
@@ -185,7 +187,7 @@ book chapter on the principles of SRC by Dentro, Wedge, and Van Loo
 This guide is also available on github:
 \textbf{\url{https://github.com/galder-max/src_guide}}. The data used
 here is available online, see next section for details. For each method,
-we provide hyperlink to their online webpage.
+we provide a hyperlink to their online webpage.
 
 \newpage
 
@@ -207,7 +209,7 @@ et al. 2020) and can be downloaded from EGA under study accession no.
 \hypertarget{vcf-files}{%
 \subsection{VCF files}\label{vcf-files}}
 
-It will be less time consuming to start form vcf files. Mutation calling
+It will be less time consuming to start from vcf files. Mutation calling
 has already been performed with four different callers on these BAMs. In
 this guide we will use the ``perfect'' or ``true'' calls, i.e.~the
 mutations as input to the simulator, and compare them to the MuTect
@@ -225,7 +227,7 @@ calling}\label{copy-number-aberration-calling}}
 
 CNA calling has been performed using
 \href{https://github.com/Wedge-Oxford/battenberg}{\textbf{Battenberg}}
-(Nik-Zainal et al. 2012). The output files can be downloadded in synapse
+(Nik-Zainal et al. 2012). The output files can be downloaded in synapse
 with accession number syn21609785. Again, we are using T2 at 128X. The
 files are named \emph{T2-128X\_refit\_cellularity\_ploidy.txt} and
 \emph{T2-128X\_refit\_subclones\_noXY.txt}. The former contains the
@@ -238,8 +240,9 @@ available at 64X, 32X, 16X and 8X.
 \hypertarget{step-by-step-guide}{%
 \section{Step-by-step guide}\label{step-by-step-guide}}
 
-\hypertarget{alignment-with-bwa-mem}{%
-\subsection{Alignment with BWA-mem}\label{alignment-with-bwa-mem}}
+\hypertarget{step-1-alignment-with-bwa-mem}{%
+\subsection{Step 1: Alignment with
+BWA-mem}\label{step-1-alignment-with-bwa-mem}}
 
 We will assume that most quality checks have been performed and the
 first step after receiving your sequences fresh from the sequencing
@@ -250,12 +253,13 @@ and aligned with \href{https://github.com/lh3/bwa}{\textbf{BWA-mem}} (Li
 2013).
 
 You might also want to consider read trimming and further processing of
-the alignmed BAM for variant calling such as realignment around indels
+the aligned BAM for variant calling such as realignment around indels
 and base recalibration. Mutation callers will usually include these
 steps in their pipeline documentation.
 
-\hypertarget{mutation-calling}{%
-\subsection{Mutation calling}\label{mutation-calling}}
+\hypertarget{step-2-mutation-calling-with-mutect}{%
+\subsection{Step 2: Mutation calling with
+MuTect}\label{step-2-mutation-calling-with-mutect}}
 
 Mutation calling is a complex classification task where the whole tumour
 BAM file is compared to the normal BAM file, differences have to be
@@ -265,18 +269,17 @@ classified as either a true somatic change or a technical artefact.
 For the clustering and SRC, we are starting from the substitutions, or
 single nucleotide variants (SNVs). Many algorithms have been proposed to
 call SNVs. Some perform better than others but the current good practice
-is to combined multiple callers into a consensus (Ewing et al. 2015),
+is to combine multiple callers into a consensus (Ewing et al. 2015),
 typically with a majority vote strategy, e.g.~considering true variant
 if called by 2 out of 3 callers.
 
-\hypertarget{typical-run-with-a-previous-version-of-mutect}{%
-\subsubsection{Typical run with (a previous version of)
-MuTect}\label{typical-run-with-a-previous-version-of-mutect}}
+\hypertarget{typical-run-with-mutect}{%
+\subsubsection{Typical run with MuTect}\label{typical-run-with-mutect}}
 
 Here, to illustrate a typical run, we show how a previous version of
-MuTect was run to generate the
+MuTect v1.1.4 was run to generate the
 \href{https://software.broadinstitute.org/cancer/cga/mutect_download}{\textbf{MuTect}}
-(Cibulskis et al. 2013) MuTect vcf files.
+(Cibulskis et al. 2013) vcf files.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -356,9 +359,9 @@ more sophisticated read functions are available for vcf files (e.g.
 ## 6        0:96,0:.:96:0.00:0  0/1:78,32:34:110:0.291:2
 \end{verbatim}
 
-As we can see, some of the fields look similar, and are usually the
-mandatory vcf fields, while others are formatted differently. This is
-documented in the vcf header.
+As we can see, some of the fields look similar, and are the usual vcf
+fields, while others are formatted differently. This is documented in
+the vcf header.
 
 First we look at the chromosomal positions and the associated base
 changes and compare them between the two set of calls.
@@ -386,11 +389,11 @@ changes and compare them between the two set of calls.
 ## [1] 3827
 \end{verbatim}
 
-So we see that mutect has missed a few mutations while calling a few
+So we see that MuTect has missed a few mutations while calling a few
 extra ones as well. Typically, these false positives display low VAF, so
 let's verify this.
 
-The perfect calls store the tumour VAFs in the 8th column, while mutect
+The perfect calls store the tumour VAFs in the 8th column, while MuTect
 calls store the tumour VAFs in the 11th column (named \emph{tumor}) in
 the FA field. There are many ways to go about extracting this
 information. Here, we will use simple regular expression searches.
@@ -455,9 +458,9 @@ distribution.
 
 \newpage
 
-\hypertarget{copy-number-calling-with-battenberg}{%
-\subsection{Copy number calling with
-Battenberg}\label{copy-number-calling-with-battenberg}}
+\hypertarget{step-3-copy-number-calling-with-battenberg}{%
+\subsection{Step 3: Copy number calling with
+Battenberg}\label{step-3-copy-number-calling-with-battenberg}}
 
 We have run
 \href{https://github.com/Wedge-Oxford/battenberg}{\textbf{Battenberg}}
@@ -480,14 +483,14 @@ Briefly, to infer ploidy \(\psi\) and purity \(\rho\) of the samples,
 ASCAT looks at how the logR \(r_i\) and the bi-allelic frequency (BAF)
 \(b_i\) of heterozygous SNPs are influenced by copy-number-induced
 allelic imbalances across the genome; as a consequence ASCAT will fail
-to report estimates for cancer genomes presenting no allelic imbalances,
-which is a rare case for cancers but not the expection for less advanced
-or benign tumours.
+to report estimates for cancer genomes presenting no allelic imbalances.
+In most malignancies, apart from benign or less advanced tumours, we
+expect to observe allelic imbalances.
 
 Then to call CNAs given a sample's purity and ploidy, ASCAT solves a
-system of two equations with two unkowns formed by writing LogR and BAF
-of heterozygous SNPs as a function of the number of copies of allele A
-\(N_A\) and number of copies of allele B \(N_B\):
+system of two equations with two unknowns formed by writing LogR and BAF
+of heterozygous SNPs as a function of the number of copies of allele A,
+\(N_A\) and number of copies of allele B, \(N_B\):
 
 \[\begin{array}{lcl} r_i&=&
   log_2(\frac{2(1-\rho)+\rho(N_{A,i}+N_{B,i})}{\psi})\\ b_i&=&\frac{1-\rho+\rho N_{B,i}}{2-2\rho+\rho(N_{A,i}+N_{B,i})}
@@ -509,7 +512,7 @@ regions by looking at significant deviations of BAF of heterozygous SNPs
 from the expected BAF of clonal states. If deviations are significant,
 Battenberg flags the segment as subclonal. However, the subclonal states
 are not trivially obtained from the logR and the BAF, as there are now
-more unkowns than equations.
+more unknowns than equations.
 
 Using heuristics, Battenberg outputs a few possible solutions, i.e.~up
 to 6 pairs of integer copy number states and their associated cancer
@@ -529,10 +532,10 @@ can be inferred from observed average BAF across the genomic segment
   N_{B,2}-2b_s(1-\rho)-b_s\rho(N_{A,2}+N_{B,2})}{b_s\rho(N_{A,1}+N_{B,1})-b_s\rho(N_{A,2}+N_{B,2})-\rho
   N_{B,1}+\rho N_{B,2}}\]
 
-What is more Battenberg uses haplotyped SNPs to increase its sensitivity
+Furthermore, Battenberg uses haplotyped SNPs to increase its sensitivity
 to detect the BAF deviations from expected BAF of clonal states. The
 haplotypes are imputed using impute2 (Howie, Donnelly, and Marchini
-2009) and a two-step segmentation stragegy of the BAF track helps take
+2009) and a two-step segmentation strategy of the BAF track helps take
 advantage of these imputed haplotypes. Briefly, haplotyped SNPs
 translate into phased BAF values, but also include switching errors.
 Therefore first the phased BAF track is segmented using a very sensitive
@@ -581,7 +584,7 @@ The previous figures are generated by Battenberg. We can also derive
 them ourselves from the copy number profile. Now we load the Battenberg
 CNA profile -we only keep the first thirteen columns-, which include
 only one of the possible solutions for subclonal segments. Then we plot
-the genomewide profile.
+the genome-wide profile.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -609,15 +612,15 @@ the genomewide profile.
 
 The columns indicate the chromosome, start, end of the segments, their
 average BAF, p-value of being subclonal (i.e.~non-integer given the
-purity ahd ploidy values), the LogR, the non-rounded total copies, the
-number of copies of the major allele, and the minor allele and the
-fraction of cells in which these states are present. If subclonal the
-segment is detected as subclonal, the latter is lower than 1 and a
-second copy number state is given together with the fraction of cancer
-cells in which it is present. There is too much ambiguity in those
-states, and while these states are not consistent across CNA methods,
-CNA methods usually agree on whether the segment should be deemed
-subclonal.
+purity and ploidy values), the LogR, the non-rounded total copies, the
+number of copies of the major allele, and the minor allele and
+\emph{frac}, the fraction of cells in which these states are present. If
+the segment is detected as subclonal, this fraction is lower than 1 and
+a second copy number state is given together with the fraction of cancer
+cells in which it is present (1-\emph{frac}). There is too much
+ambiguity in those states, and while these states are not consistent
+across CNA methods, CNA methods usually agree on whether the segment
+should be deemed subclonal.
 
 Now, let's visualise the total and minor copies along the genome.
 
@@ -634,7 +637,7 @@ Importantly, this figure is showing genomic position on the x-axis while
 the Battenberg figures are showing SNP index. The latter is very useful
 to visualise relative number of SNPs per chromosome and identify
 characteristics of the run, such as long stretches of homozygosity,
-often seen in inbred population. This stretches are blindspots for
+often seen in inbred population. These stretches are blindspots for
 segmentation with Battenberg, which is based solely on the BAF of
 heterozygous SNPs.
 
@@ -657,23 +660,23 @@ single-sample bulk whole-genome sequencing around 60X (Dentro et al.
 
 \newpage
 
-\hypertarget{subclonal-reconstruction-with-dpclust}{%
-\subsection{Subclonal reconstruction with
-DPClust}\label{subclonal-reconstruction-with-dpclust}}
+\hypertarget{step-4-subclonal-reconstruction-with-dpclust}{%
+\subsection{Step 4: Subclonal reconstruction with
+DPClust}\label{step-4-subclonal-reconstruction-with-dpclust}}
 
 \hypertarget{vaf-to-ccf}{%
 \subsubsection{VAF to CCF}\label{vaf-to-ccf}}
 
-When clustering mutations, the assumptions is that mutations present in
+When clustering mutations, the assumption is that mutations present in
 the same fraction of cells are more likely to belong to the same most
 recent common ancestor of a large population of cells, i.e.~a subclone.
 Therefore, we need to estimate in what fraction of cells these mutations
 are present, which is by deriving the cellular prevalence (CP) or cancer
-cell fraction (CCF), with \[CCF=\frac{CP}{purity}\].
+cell fraction (CCF), with \[CCF=\frac{CP}{purity}\]
 
 The CP or CCF is inferred from the VAF, which is influenced by the
-number of tumour DNA copies bearing the mutation or ``multiplicity'' and
-the purity. While the purity is a global variable inferred mostly
+number of tumour DNA copies bearing the mutation, or ``multiplicity''
+and the purity. While the purity is a global variable inferred mostly
 through CNA calling and can be further refined with SNV, the
 multiplicity is inferred on a per-mutation basis.
 
@@ -686,7 +689,7 @@ multiplicity is inferred on a per-mutation basis.
 \caption{\label{fig6} Illustrate the effect of copy number on mutation VAF}\label{fig:fig6}
 \end{figure}
 
-On the previous figure, we see that for the lost chromosomes, because
+In the previous figure, we see that for the lost chromosomes, because
 there are now relatively more copies of sequenced DNA bearing the
 mutations falling in those regions, the VAF is higher.
 
@@ -698,16 +701,15 @@ Where \(N_{tumour}\) is the number of DNA copies in the tumour. In our
 sample, \(\rho\) equals 0.55. Let's look at mutations in 1+0 tumour
 regions (1 copy of the major, 0 copies of the minor). If their VAF is
 around 0.4 as in the figure, their mutation copy number is
-\[\frac{0.4}{0.55}(1\times0.55+2\times0.45)\approx
-                                1\].
+\[\frac{0.4}{0.55}(1 \times 0.55+2 \times 0.45) \approx 1\]
 
 The mutation copy number is an estimate of the multiplicity, which is an
-integer representing the number of bearing DNA copies bearing the
-mutation. Dividing the mutation copy number by the multiplicity gives
-the CCF: \[CCF=\frac{mutcopynumber}{multiplicity}\]
+integer representing the number of DNA copies bearing the mutation.
+Dividing the mutation copy number by the multiplicity gives the CCF:
+\[CCF=\frac{mutcopynumber}{multiplicity}\]
 
-Most clustering method infer the multiplicity and then the CCF, and for
-this, DPClust uses a preprocessing package
+Most clustering methods infer the multiplicity and then the CCF, and for
+this, DPClust uses a pre-processing package
 \href{https://github.com/Wedge-Oxford/dpclust_smchet_docker/blob/master/dpclust3p_v1.0.6.tar.gz}{dpclust3p}.
 
 We will now run the main function of this package on our data.
@@ -781,10 +783,13 @@ Next we run DPClust on the dpclust input file that we generated. This
 file contains all the necessary information for DPClust to run.
 
 An important aspect of DPClust is that it has strong default prior on
-the concentration parameter, which will impact on the
+the concentration parameter, which should impact on the
 concentration/number of clusters. Not all methods put a strong prior on
 this parameter and allow for it to be influenced by the underlying data.
-We will try and run DPClust with different values of this parameter.
+In the original DPClust publication, the authors have tested the impact
+of this prior on the results and found that their clustering results
+were stable, even setting it to 1. We will try and replicate this result
+and run DPClust with a different value of this parameter.
 
 The DPClust R package used here can be downloaded from
 \href{https://github.com/Wedge-Oxford/dpclust_smchet_docker/blob/master/dpclust_v2.2.5.tar.gz}{\textbf{github}}.
@@ -805,7 +810,7 @@ BiocManager::install(c(``VariantAnnotation'',
 \KeywordTok{library}\NormalTok{(DPClust)}
 \CommentTok{## load the data}
 \NormalTok{cellularity <-}\StringTok{ }\KeywordTok{read.table}\NormalTok{(}\StringTok{"input/T2-128X_refit_cellularity_ploidy.txt"}\NormalTok{,}\DataTypeTok{header=}\NormalTok{T)[,}\StringTok{"cellularity"}\NormalTok{]}
-\NormalTok{conc_param <-}\StringTok{ }\FloatTok{0.01}
+\NormalTok{conc_param <-}\StringTok{ }\FloatTok{0.01} \CommentTok{## default value for the concentration parameter}
 \NormalTok{dataset  <-}\StringTok{  }\KeywordTok{load.data}\NormalTok{(dpInputFile, }
                        \DataTypeTok{cellularity=}\NormalTok{cellularity, }
                        \DataTypeTok{Chromosome=}\StringTok{"chr"}\NormalTok{, }
@@ -869,7 +874,7 @@ It looks like DPClust has found an extra cluster between the two
 subclones, and a substantial proportion of the clonal mutations have
 been assigned to subclones.
 
-Next we will first try running DPClust with a different concentration
+Next we will try running DPClust with a different concentration
 parameter (from 0.01 we change it to 1).
 
 \begin{figure}[H]
@@ -881,17 +886,21 @@ parameter (from 0.01 we change it to 1).
   \label{Figure7}
 \end{figure}
 
-In this solution, we can see two very closeby clusters, which, if they
-were real, would need to be linear due to the pigeonhole principle.
-Rather arbitrarily, we tend to merge together clusters that are too
-close in CCF space. In single-sample studies, they do not add much,
-besides, we do not think that we have the power to distinguish between
-those. Similarly we remove clusters that are \emph{too small} (e.g.
-\textless{}50 mutations or \textless{}1\% of mutation load) as well as
-superclonal clusters.
+In this very similar solution, we can see two very closeby clusters,
+which, if they were real, would need to be linear due to the pigeonhole
+principle (see Lexicon in main text). It is not unusual to see spurious
+clusters that are \emph{too small} (e.g. \textless{}50 mutations or
+\textless{}1\% of mutation load) as well as superclonal clusters
+(CCF\textgreater{}\textgreater{}100\%). In single-sample studies, these
+do not add much to the SRC and we tend to merge them with the closest
+and larger cluster, as typically, the means of their distributions are
+not significantly different. For simplicity, we usually put hard
+thresholds on their mean CCF differences, e.g.
+\(if(abs(CCF_{cluster_A}-CCF_{cluster_B})>0.1)\;merge(cluster_A,cluster_B)\),
+but one can also perform more formal statistical testing.
 
 Thus, if we were to use this concentration parameter (1), the solution
-is actually pretty good after merging and removing of the small cluster.
+is actually pretty good after merging and removing the small cluster.
 The true number of clusters, their CCF and associated number of SNVs
 are:
 
@@ -922,9 +931,9 @@ Subclone & CCF & N SNV\tabularnewline
 This is not far from the truth. What about mutation assignment? We can
 see that there are less mutations that have been clustered than there
 are in the design. This is partly because a few mutations are removed
-and re-assigned posthoc, so they are present in the assignment files,
+and re-assigned post hoc, so they are present in the assignment files,
 and partly because mutations with 0 alternate read counts are not
-present in the truth file at all. Let's have a look at the contigency
+present in the truth file at all. Let's have a look at the contingency
 table of assignment.
 
 \begin{Shaded}
@@ -954,8 +963,8 @@ NA & 19 & 18 & 9 & 0\\
 
 In the DPClust predictions, some mutations were not assigned to any
 cluster, usually because they did not fall on any copy number segments.
-The clustering contigency table looks relatively good, but this is not
-unexpected as such high depth. With such prediction, we can start
+The clustering contingency table looks relatively good, but this is not
+unexpected at such high depth. With such prediction, we can start
 characterising mutational signatures clonal vs.~subclonal, and between
 subclone.
 
@@ -971,7 +980,7 @@ Now let's talk about the phylogeny.
 
 Once the clustering of SNVs is obtained, the tree building can start.
 Some methods have part or whole of the following process built in. For
-example DPClust can take phasing of mutation as input to infer linear
+example, DPClust can take phasing of mutation as input to infer linear
 vs.~branching subclones.
 
 But here, we go through this step manually. Often the tree building from
@@ -983,8 +992,8 @@ relationship (i.e.~linear vs.~branching) between subclones:
 \begin{itemize}
 \item{linear relationship}
   \begin{itemize}
- \item{the pigeonhole principle: the sum of ccfs of branching
-     subclones at same tree height should be <=100\% of the ccf of
+ \item{the pigeonhole principle: the sum of CCFs of branching
+     subclones at same tree height should be <=100\% of the CCF of
      their most recent common ancestor. Indeed if it was >100\%, this
      would mean that at least a few cells carry the same set of
      mutations. However, according to the infinite sites hypothesis, the same set of random mutations is highly
@@ -994,15 +1003,15 @@ relationship (i.e.~linear vs.~branching) between subclones:
      mutations are present on the same read pair, they must have been
      present in the same cell. This means that at least one cell of subclone A and
      one cell of subclone B carried the same mutation. Moreover, under
-     the infinite site hypothesis, each mutation appeared only once,
+     the infinite sites hypothesis, each mutation appeared only once,
      hence, subclone A and B must be linearly related. }
  \end{itemize}
 \item{branching relationship}
   \begin{itemize}
-  \item{two significantly mutually exclusive mutations on haploid
+  \item{two mutually exclusive mutations on haploid
       regions that are assigned to different clusters. On a clonally haploid
       region of the genome (i.e. 1 copy of allele A and 0 copies of
-      allele B), only one copy of the genome is left to be
+      allele B), only one copy of the region is left to be
       mutated in cancer cells. Given two mutations assigned to two linear subclones,
       located in this haploid region and close to each other (distance
       below the read length), it is expected that the
@@ -1029,8 +1038,8 @@ same code can be used to load the mutations from multiple samples.
 An important step is to make sure the union of all mutations across
 samples has been \emph{genotyped} if not called in all of them. Indeed,
 mutations called in a given sample might have been missed in another
-although the alternate read count is positive, i.e.\(VAF>0\). It is thus
-important to rederive the alternate and reference counts for all
+although the alternate read count is positive, i.e. \({VAF}>0\). It is
+thus important to rederive the alternate and reference counts for all
 mutations in all samples before the clustering.
 
 \newpage
@@ -1071,7 +1080,7 @@ single-sample studies remain informative about the subclonality of
 mutations and especially targetable drivers, their associated mutation
 processes and the timing of the MRCA.
 
-Once the subclonal strucutre is obtained, post-hoc assignment of other
+Once the subclonal structure is obtained, post hoc assignment of other
 types of variants, such as indels and structural variants can be
 performed. Methods such as
 \href{https://github.com/gerstung-lab/MutationTimeR}{\textbf{MutationTimer}}
