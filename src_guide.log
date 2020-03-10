@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.11.7)  10 MAR 2020 11:00
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019) (preloaded format=pdflatex 2019.11.7)  10 MAR 2020 11:40
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -893,7 +893,7 @@ ive/2019basic/texmf-dist/fonts/type1/public/lm/lmsy7.pfb></usr/local/texlive/20
 19basic/texmf-dist/fonts/type1/public/lm/lmtk10.pfb></usr/local/texlive/2019bas
 ic/texmf-dist/fonts/type1/public/lm/lmtt10.pfb></usr/local/texlive/2019basic/te
 xmf-dist/fonts/type1/public/lm/lmtti10.pfb>
-Output written on src_guide.pdf (19 pages, 944838 bytes).
+Output written on src_guide.pdf (19 pages, 944851 bytes).
 PDF statistics:
  435 PDF objects out of 1000 (max. 8388607)
  360 compressed objects within 4 object streams
