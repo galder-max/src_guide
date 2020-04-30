@@ -9,4 +9,4 @@ The user can go through the pdf *src_guide.pdf* although currently if the user w
 
 All the code is in R. Main dependencies and input files are discussed in the pdf. We provide links to all the packages and input files.
 
-This repo also contains the pre-computed input files necessary to replicate the results in the vignette.
+~~This repo also contains the pre-computed input files necessary to replicate the results in the vignette.~~
