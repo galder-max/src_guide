@@ -1,4 +1,4 @@
-# A practical guide to tumour subclonal reconstruction
+# A practical guide to tumour Subclonal ReConstruction (SRC)
 
 ## Main vignette in R markdown
 
