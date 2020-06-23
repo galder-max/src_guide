@@ -1,0 +1,25 @@
+\contentsline {section}{Introduction}{2}{section*.2}% 
+\contentsline {subsection}{About this guide}{2}{section*.3}% 
+\contentsline {subsection}{Availability}{2}{section*.5}% 
+\contentsline {section}{Download input data}{3}{section*.6}% 
+\contentsline {subsection}{Input BAM file}{3}{section*.7}% 
+\contentsline {subsection}{VCF files}{3}{section*.8}% 
+\contentsline {subsection}{Copy number aberration calling}{3}{section*.9}% 
+\contentsline {section}{Step-by-step guide}{4}{section*.10}% 
+\contentsline {subsection}{Step 1: Alignment with BWA-mem}{4}{section*.11}% 
+\contentsline {subsection}{Step 2: Mutation calling with MuTect}{4}{section*.12}% 
+\contentsline {subsubsection}{Typical run with MuTect}{4}{section*.13}% 
+\contentsline {subsubsection}{False positives at low VAF}{4}{section*.14}% 
+\contentsline {subsubsection}{Effect of read depth on the VAF distribution}{6}{section*.16}% 
+\contentsline {subsection}{Step 3: Copy number calling with Battenberg}{7}{section*.18}% 
+\contentsline {subsubsection}{How does it work}{7}{section*.19}% 
+\contentsline {subsubsection}{How does it look}{8}{section*.20}% 
+\contentsline {subsubsection}{Impact of read depth on CNA}{9}{section*.24}% 
+\contentsline {subsection}{Step 4: Subclonal reconstruction with DPClust}{10}{section*.25}% 
+\contentsline {subsubsection}{VAF to CCF}{10}{section*.26}% 
+\contentsline {subsubsection}{Clustering}{12}{section*.30}% 
+\contentsline {subsubsection}{Phylogenetic tree}{17}{section*.34}% 
+\contentsline {paragraph}{Single-sample tree}{17}{section*.35}% 
+\contentsline {paragraph}{Note on multi-sample tree}{17}{section*.36}% 
+\contentsline {section}{Conclusion}{18}{section*.37}% 
+\contentsline {section}{References}{19}{section*.38}% 

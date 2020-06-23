@@ -1,0 +1,105 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyperFirstAtBeginDocument{\AtBeginDocument}
+\HyperFirstAtBeginDocument{\ifx\hyper@anchor\@undefined
+\global\let\oldcontentsline\contentsline
+\gdef\contentsline#1#2#3#4{\oldcontentsline{#1}{#2}{#3}}
+\global\let\oldnewlabel\newlabel
+\gdef\newlabel#1#2{\newlabelxx{#1}#2}
+\gdef\newlabelxx#1#2#3#4#5#6{\oldnewlabel{#1}{{#2}{#3}}}
+\AtEndDocument{\ifx\hyper@anchor\@undefined
+\let\contentsline\oldcontentsline
+\let\newlabel\oldnewlabel
+\fi}
+\fi}
+\global\let\hyper@last\relax 
+\gdef\HyperFirstAtBeginDocument#1{#1}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{Introduction}{2}{section*.2}\protected@file@percent }
+\newlabel{introduction}{{}{2}{Introduction}{section*.2}{}}
+\@writefile{toc}{\contentsline {subsection}{About this guide}{2}{section*.3}\protected@file@percent }
+\newlabel{about-this-guide}{{}{2}{About this guide}{section*.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces A. Pipeline outline. We will go through each step in this guide. B. Simulated tumour phylogeny. A few thousand SNVs, clonal loss of 3 chromosomes and subclonal loss of one chromosome. The simulated BAM, vcf and copy number outputs are available for download (see next section).\relax }}{2}{figure.caption.4}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{Figure1}{{1}{2}{A. Pipeline outline. We will go through each step in this guide. B. Simulated tumour phylogeny. A few thousand SNVs, clonal loss of 3 chromosomes and subclonal loss of one chromosome. The simulated BAM, vcf and copy number outputs are available for download (see next section).\relax }{figure.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{Availability}{2}{section*.5}\protected@file@percent }
+\newlabel{availability}{{}{2}{Availability}{section*.5}{}}
+\@writefile{toc}{\contentsline {section}{Download input data}{3}{section*.6}\protected@file@percent }
+\newlabel{download-input-data}{{}{3}{Download input data}{section*.6}{}}
+\@writefile{toc}{\contentsline {subsection}{Input BAM file}{3}{section*.7}\protected@file@percent }
+\newlabel{input-bam-file}{{}{3}{Input BAM file}{section*.7}{}}
+\@writefile{toc}{\contentsline {subsection}{VCF files}{3}{section*.8}\protected@file@percent }
+\newlabel{vcf-files}{{}{3}{VCF files}{section*.8}{}}
+\@writefile{toc}{\contentsline {subsection}{Copy number aberration calling}{3}{section*.9}\protected@file@percent }
+\newlabel{copy-number-aberration-calling}{{}{3}{Copy number aberration calling}{section*.9}{}}
+\@writefile{toc}{\contentsline {section}{Step-by-step guide}{4}{section*.10}\protected@file@percent }
+\newlabel{step-by-step-guide}{{}{4}{Step-by-step guide}{section*.10}{}}
+\@writefile{toc}{\contentsline {subsection}{Step 1: Alignment with BWA-mem}{4}{section*.11}\protected@file@percent }
+\newlabel{step-1-alignment-with-bwa-mem}{{}{4}{Step 1: Alignment with BWA-mem}{section*.11}{}}
+\@writefile{toc}{\contentsline {subsection}{Step 2: Mutation calling with MuTect}{4}{section*.12}\protected@file@percent }
+\newlabel{step-2-mutation-calling-with-mutect}{{}{4}{Step 2: Mutation calling with MuTect}{section*.12}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Typical run with MuTect}{4}{section*.13}\protected@file@percent }
+\newlabel{typical-run-with-mutect}{{}{4}{Typical run with MuTect}{section*.13}{}}
+\@writefile{toc}{\contentsline {subsubsection}{False positives at low VAF}{4}{section*.14}\protected@file@percent }
+\newlabel{false-positives-at-low-vaf}{{}{4}{False positives at low VAF}{section*.14}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Variant allele frequency distributions: MuTect vs. simulated\relax }}{6}{figure.caption.15}\protected@file@percent }
+\newlabel{fig1}{{2}{6}{Variant allele frequency distributions: MuTect vs. simulated\relax }{figure.caption.15}{}}
+\newlabel{fig:fig1}{{2}{6}{Variant allele frequency distributions: MuTect vs. simulated\relax }{figure.caption.15}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Effect of read depth on the VAF distribution}{6}{section*.16}\protected@file@percent }
+\newlabel{effect-of-read-depth-on-the-vaf-distribution}{{}{6}{Effect of read depth on the VAF distribution}{section*.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Variant allele frequency distributions: Simulated 32X vs. simulated 128X. Flattening of the VAF distribution at lower depth. Vertical lines show the cellular prevalence of the subclones divided by 2. That is where the VAF peak is expected for mutation falling in diploid regions.\relax }}{6}{figure.caption.17}\protected@file@percent }
+\newlabel{fig1b}{{3}{6}{Variant allele frequency distributions: Simulated 32X vs. simulated 128X. Flattening of the VAF distribution at lower depth. Vertical lines show the cellular prevalence of the subclones divided by 2. That is where the VAF peak is expected for mutation falling in diploid regions.\relax }{figure.caption.17}{}}
+\newlabel{fig:fig1b}{{3}{6}{Variant allele frequency distributions: Simulated 32X vs. simulated 128X. Flattening of the VAF distribution at lower depth. Vertical lines show the cellular prevalence of the subclones divided by 2. That is where the VAF peak is expected for mutation falling in diploid regions.\relax }{figure.caption.17}{}}
+\@writefile{toc}{\contentsline {subsection}{Step 3: Copy number calling with Battenberg}{7}{section*.18}\protected@file@percent }
+\newlabel{step-3-copy-number-calling-with-battenberg}{{}{7}{Step 3: Copy number calling with Battenberg}{section*.18}{}}
+\@writefile{toc}{\contentsline {subsubsection}{How does it work}{7}{section*.19}\protected@file@percent }
+\newlabel{how-does-it-work}{{}{7}{How does it work}{section*.19}{}}
+\@writefile{toc}{\contentsline {subsubsection}{How does it look}{8}{section*.20}\protected@file@percent }
+\newlabel{how-does-it-look}{{}{8}{How does it look}{section*.20}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces \textbf  {Battenberg default profile.} Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome.\relax }}{8}{figure.caption.21}\protected@file@percent }
+\newlabel{Figure4}{{4}{8}{\textbf {Battenberg default profile.} Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome.\relax }{figure.caption.21}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces \textbf  {Battenberg refitted profile.} Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome.\relax }}{8}{figure.caption.22}\protected@file@percent }
+\newlabel{Figure5}{{5}{8}{\textbf {Battenberg refitted profile.} Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome.\relax }{figure.caption.22}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces  Battenberg plot from the input file. Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome. \relax }}{9}{figure.caption.23}\protected@file@percent }
+\newlabel{fig2}{{6}{9}{Battenberg plot from the input file. Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome. \relax }{figure.caption.23}{}}
+\newlabel{fig:fig2}{{6}{9}{Battenberg plot from the input file. Along the genome on the x-axis, copy number of the minor (dark blue) and total (orange) per chromosome. \relax }{figure.caption.23}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Impact of read depth on CNA}{9}{section*.24}\protected@file@percent }
+\newlabel{impact-of-read-depth-on-cna}{{}{9}{Impact of read depth on CNA}{section*.24}{}}
+\@writefile{toc}{\contentsline {subsection}{Step 4: Subclonal reconstruction with DPClust}{10}{section*.25}\protected@file@percent }
+\newlabel{step-4-subclonal-reconstruction-with-dpclust}{{}{10}{Step 4: Subclonal reconstruction with DPClust}{section*.25}{}}
+\@writefile{toc}{\contentsline {subsubsection}{VAF to CCF}{10}{section*.26}\protected@file@percent }
+\newlabel{vaf-to-ccf}{{}{10}{VAF to CCF}{section*.26}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces  Illustrate the effect of copy number on mutation VAF\relax }}{10}{figure.caption.27}\protected@file@percent }
+\newlabel{fig6}{{7}{10}{Illustrate the effect of copy number on mutation VAF\relax }{figure.caption.27}{}}
+\newlabel{fig:fig6}{{7}{10}{Illustrate the effect of copy number on mutation VAF\relax }{figure.caption.27}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces  Mutation copy number vs. DNA copy number.\relax }}{11}{figure.caption.28}\protected@file@percent }
+\newlabel{fig7}{{8}{11}{Mutation copy number vs. DNA copy number.\relax }{figure.caption.28}{}}
+\newlabel{fig:fig7}{{8}{11}{Mutation copy number vs. DNA copy number.\relax }{figure.caption.28}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces  Distribution of CCF. Vertical lines indicate the expected CCF of the clones.\relax }}{12}{figure.caption.29}\protected@file@percent }
+\newlabel{fig8}{{9}{12}{Distribution of CCF. Vertical lines indicate the expected CCF of the clones.\relax }{figure.caption.29}{}}
+\newlabel{fig:fig8}{{9}{12}{Distribution of CCF. Vertical lines indicate the expected CCF of the clones.\relax }{figure.caption.29}{}}
+\@writefile{toc}{\contentsline {subsubsection}{Clustering}{12}{section*.30}\protected@file@percent }
+\newlabel{clustering}{{}{12}{Clustering}{section*.30}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces \textbf  {DPClust main output figure for single sample.} The histogram of the CCF values is shown and the location and density distribution of the clusters inferred by DPClust is shown on top.\relax }}{14}{figure.caption.31}\protected@file@percent }
+\newlabel{Figure6}{{10}{14}{\textbf {DPClust main output figure for single sample.} The histogram of the CCF values is shown and the location and density distribution of the clusters inferred by DPClust is shown on top.\relax }{figure.caption.31}{}}
+\gdef \LT@i {\LT@entry 
+    {1}{45.16655pt}\LT@entry 
+    {1}{32.972pt}\LT@entry 
+    {1}{37.38884pt}}
+\@writefile{lof}{\contentsline {figure}{\numberline {11}{\ignorespaces \textbf  {DPClust main output figure for single sample (concentration parameter x100).} The histogram of the CCF values is shown and the location and density distribution of the clusters inferred by DPClust is shown on top.\relax }}{15}{figure.caption.32}\protected@file@percent }
+\newlabel{Figure7}{{11}{15}{\textbf {DPClust main output figure for single sample (concentration parameter x100).} The histogram of the CCF values is shown and the location and density distribution of the clusters inferred by DPClust is shown on top.\relax }{figure.caption.32}{}}
+\gdef \LT@ii {\LT@entry 
+    {1}{45.16655pt}\LT@entry 
+    {1}{32.972pt}\LT@entry 
+    {1}{37.38884pt}}
+\@writefile{toc}{\contentsline {subsubsection}{Phylogenetic tree}{17}{section*.34}\protected@file@percent }
+\newlabel{phylogenetic-tree}{{}{17}{Phylogenetic tree}{section*.34}{}}
+\@writefile{toc}{\contentsline {paragraph}{Single-sample tree}{17}{section*.35}\protected@file@percent }
+\newlabel{single-sample-tree}{{}{17}{Single-sample tree}{section*.35}{}}
+\@writefile{toc}{\contentsline {paragraph}{Note on multi-sample tree}{17}{section*.36}\protected@file@percent }
+\newlabel{note-on-multi-sample-tree}{{}{17}{Note on multi-sample tree}{section*.36}{}}
+\@writefile{toc}{\contentsline {section}{Conclusion}{18}{section*.37}\protected@file@percent }
+\newlabel{conclusion}{{}{18}{Conclusion}{section*.37}{}}
+\newlabel{references}{{}{19}{References}{section*.38}{}}
+\@writefile{toc}{\contentsline {section}{References}{19}{section*.38}\protected@file@percent }

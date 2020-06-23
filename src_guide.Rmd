@@ -449,9 +449,10 @@ Van Loo [@dentro_principles_2017].
 
 ## Availability
 This guide is also available on github:
-**https://github.com/galder-max/src_guide**. The data used here is available
+**https://github.com/galder-max/src_guide** (where SRC stands for
+'subclonal reconstruction'). The data used here is available
 online, see next section for details. For each method, we provide a
-hyperlink to their online webpage.  
+hyperlink to their online webpage.
 
 \newpage
 # Download input data
